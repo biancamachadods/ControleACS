@@ -1,0 +1,2093 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AMA UBS - Dashboard ACS</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+/* ================================================
+   VARIÁVEIS GLOBAIS
+================================================ */
+:root {
+  --verde: #27ae60; --verde-claro: #2ecc71;
+  --vermelho: #e74c3c; --vermelho-claro: #ff6b6b;
+  --amarelo: #f39c12; --amarelo-claro: #f1c40f;
+  --azul-escuro: #1a3a5c; --azul-medio: #2980b9; --azul-claro: #3498db;
+  --roxo: #8e44ad; --roxo-claro: #a569bd;
+  --rosa: #e91e8c; --rosa-claro: #f48fb1;
+  --laranja: #e67e22;
+  --cinza-claro: #ecf0f1; --cinza-medio: #bdc3c7;
+  --branco: #ffffff; --texto-escuro: #2c3e50;
+  --sombra: 0 4px 15px rgba(0,0,0,0.15);
+  --borda-radius: 8px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #f0f4f8;
+  color: var(--texto-escuro);
+  min-height: 100vh;
+}
+
+/* ================================================
+   CABEÇALHO GLOBAL
+================================================ */
+#cabecalho {
+  background: linear-gradient(135deg, var(--azul-escuro) 0%, var(--azul-medio) 100%);
+  color: white;
+  padding: 10px 16px 0;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  box-shadow: var(--sombra);
+}
+
+#cabecalho h1 {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+
+/* ABAS DE NAVEGAÇÃO */
+.nav-abas {
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 0;
+}
+.nav-abas::-webkit-scrollbar { display: none; }
+
+.aba-btn {
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.12);
+  border: none;
+  border-radius: 8px 8px 0 0;
+  color: rgba(255,255,255,0.75);
+  padding: 7px 11px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+.aba-btn:hover { background: rgba(255,255,255,0.2); color: white; }
+.aba-btn.ativa {
+  background: #f0f4f8;
+  color: var(--azul-escuro);
+  border-bottom: 2px solid #f0f4f8;
+}
+
+/* ================================================
+   CONTEÚDO DAS ABAS
+================================================ */
+.aba-conteudo { display: none; }
+.aba-conteudo.ativa { display: block; }
+
+/* ================================================
+   MAPA — CAMPOS DO TOPO
+================================================ */
+#mapa-controles {
+  background: linear-gradient(135deg, var(--azul-escuro) 0%, var(--azul-medio) 100%);
+  padding: 8px 16px 10px;
+}
+
+.campos-topo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.campo-grupo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.campo-grupo label {
+  font-size: 9px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  opacity: 0.8; color: white;
+}
+.campo-grupo input,
+.campo-grupo select {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: white;
+  border-radius: 5px;
+  padding: 4px 8px;
+  font-size: 11px; font-weight: 600;
+  text-align: center; width: 90px;
+  outline: none; transition: background 0.2s;
+}
+.campo-grupo input::placeholder { color: rgba(255,255,255,0.5); }
+.campo-grupo input:focus,
+.campo-grupo select:focus { background: rgba(255,255,255,0.25); }
+.campo-grupo select option { color: var(--texto-escuro); background: white; }
+
+.botoes-acao {
+  display: flex; gap: 5px;
+  justify-content: center; flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.btn {
+  border: none; border-radius: 6px;
+  padding: 6px 10px; font-size: 10px; font-weight: 700;
+  cursor: pointer; display: flex; align-items: center; gap: 4px;
+  transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.3px;
+}
+.btn:active { transform: scale(0.96); }
+.btn-pdf    { background: #e74c3c; color: white; }
+.btn-pdf:hover { background: #c0392b; }
+.btn-reset  { background: #95a5a6; color: white; }
+.btn-reset:hover { background: #7f8c8d; }
+.btn-export { background: #27ae60; color: white; }
+.btn-export:hover { background: #219a52; }
+.btn-azul   { background: var(--azul-claro); color: white; }
+.btn-azul:hover { background: var(--azul-medio); }
+.btn-roxo   { background: var(--roxo); color: white; }
+.btn-roxo:hover { background: #7d3c98; }
+
+.legenda {
+  display: flex; gap: 8px;
+  justify-content: center; flex-wrap: wrap; margin-bottom: 4px;
+}
+.legenda-item { display: flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; color: white; }
+.legenda-cor { width: 11px; height: 11px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.3); }
+
+.contadores {
+  display: flex; gap: 6px;
+  justify-content: center; flex-wrap: wrap;
+}
+.contador-item {
+  background: rgba(255,255,255,0.12);
+  border-radius: 12px; padding: 2px 8px;
+  font-size: 10px; font-weight: 700; color: white;
+}
+
+/* ================================================
+   GRID DO MAPA
+================================================ */
+#conteudo-mapa { padding: 10px; max-width: 1200px; margin: 0 auto; }
+
+#grid-mapa {
+  display: grid;
+  grid-template-columns: repeat(15, 1fr);
+  gap: 4px;
+}
+
+.celula {
+  background: white;
+  border: 1.5px solid var(--cinza-medio);
+  border-radius: var(--borda-radius);
+  padding: 4px 2px;
+  min-height: 56px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.18s;
+  position: relative; overflow: hidden;
+  user-select: none; -webkit-tap-highlight-color: transparent;
+}
+.celula:hover { transform: scale(1.06); z-index: 5; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+.celula:active { transform: scale(0.97); }
+
+.celula-codigo { font-size: 9px; font-weight: 800; color: rgba(0,0,0,0.45); letter-spacing: 0.3px; line-height: 1; }
+.celula-valor  { font-size: 9px; font-weight: 700; text-align: center; line-height: 1.2; padding: 0 2px; word-break: break-word; max-width: 100%; }
+.celula-badges { display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; margin-top: 1px; }
+
+.badge-icon { font-size: 8px; line-height: 1; }
+
+/* Cores das células */
+.celula.verde   { background: linear-gradient(135deg,#d5f5e3,#a9dfbf); border-color: var(--verde); }
+.celula.verde .celula-codigo { color: #1a7a42; }
+.celula.verde .celula-valor  { color: #145a32; }
+.celula.vermelho{ background: linear-gradient(135deg,#fadbd8,#f5b7b1); border-color: var(--vermelho); }
+.celula.vermelho .celula-codigo { color: #922b21; }
+.celula.vermelho .celula-valor  { color: #7b241c; }
+.celula.amarelo { background: linear-gradient(135deg,#fef9e7,#fad7a0); border-color: var(--amarelo); }
+.celula.amarelo .celula-codigo { color: #7d6608; }
+.celula.amarelo .celula-valor  { color: #6e2f1a; }
+
+/* Destaque de observação */
+.celula.tem-obs { box-shadow: 0 0 0 2.5px #e74c3c; }
+.celula.tem-obs::after {
+  content: '!';
+  position: absolute; top: 2px; right: 3px;
+  font-size: 8px; font-weight: 900;
+  color: var(--vermelho); line-height: 1;
+}
+
+/* Badges de prontuário */
+.celula.tem-idoso   { border-top: 3px solid var(--roxo); }
+.celula.tem-gestante{ border-top: 3px solid var(--rosa); }
+.celula.tem-bebe    { border-top: 3px solid var(--azul-claro); }
+
+/* ================================================
+   MODAIS GENÉRICOS
+================================================ */
+.overlay-modal {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 999;
+  align-items: center; justify-content: center;
+  padding: 16px;
+  backdrop-filter: blur(3px);
+  overflow-y: auto;
+}
+.overlay-modal.ativo { display: flex; }
+
+.modal-box {
+  background: white;
+  border-radius: 14px;
+  padding: 22px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  animation: slideUp 0.25s ease;
+  position: relative;
+  max-height: 92vh;
+  overflow-y: auto;
+}
+.modal-box.largo { max-width: 560px; }
+
+@keyframes slideUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+.modal-titulo-box {
+  font-size: 20px; font-weight: 900;
+  color: var(--azul-escuro);
+  text-align: center; margin-bottom: 4px; letter-spacing: 1px;
+}
+.modal-subtitulo-box {
+  font-size: 11px; color: #888;
+  text-align: center; margin-bottom: 16px;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+
+.modal-label {
+  font-size: 11px; font-weight: 700; color: #666;
+  text-transform: uppercase; letter-spacing: 0.4px;
+  margin-bottom: 5px; margin-top: 10px; display: block;
+}
+.modal-input, .modal-select, .modal-textarea {
+  width: 100%;
+  border: 2px solid var(--cinza-medio);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 13px; font-weight: 600;
+  outline: none; transition: border-color 0.2s;
+  font-family: inherit;
+}
+.modal-input:focus, .modal-select:focus, .modal-textarea:focus { border-color: var(--azul-claro); }
+.modal-textarea { resize: vertical; min-height: 60px; }
+.modal-input.upper { text-transform: uppercase; }
+
+.modal-opcoes { display: flex; gap: 8px; margin: 10px 0; }
+.btn-opcao {
+  flex: 1; border: 2px solid transparent; border-radius: 8px;
+  padding: 9px 6px; font-size: 12px; font-weight: 800;
+  cursor: pointer; transition: all 0.18s;
+  text-transform: uppercase; letter-spacing: 0.3px;
+}
+.btn-opcao:active { transform: scale(0.95); }
+.btn-ausente { background: #fadbd8; color: #922b21; border-color: var(--vermelho); }
+.btn-ausente:hover, .btn-ausente.ativo { background: var(--vermelho); color: white; }
+.btn-x       { background: #fef9e7; color: #7d6608; border-color: var(--amarelo); }
+.btn-x:hover, .btn-x.ativo { background: var(--amarelo); color: white; }
+
+.modal-acoes { display: flex; gap: 8px; margin-top: 14px; }
+.btn-salvar {
+  flex: 2; background: var(--azul-escuro); color: white;
+  border: none; border-radius: 8px; padding: 12px;
+  font-size: 14px; font-weight: 800; cursor: pointer;
+  transition: background 0.2s; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.btn-salvar:hover { background: var(--azul-medio); }
+.btn-salvar:active { transform: scale(0.97); }
+.btn-secundario {
+  flex: 1; background: #ecf0f1; color: #7f8c8d;
+  border: none; border-radius: 8px; padding: 12px;
+  font-size: 12px; font-weight: 700; cursor: pointer;
+  transition: background 0.2s; text-transform: uppercase;
+}
+.btn-secundario:hover { background: #d5dbdb; }
+.btn-perigo {
+  flex: 1; background: #fadbd8; color: var(--vermelho);
+  border: 2px solid var(--vermelho); border-radius: 8px; padding: 10px;
+  font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s;
+}
+.btn-perigo:hover { background: var(--vermelho); color: white; }
+
+.btn-fechar {
+  position: absolute; top: 12px; right: 14px;
+  background: none; border: none; font-size: 22px;
+  color: #aaa; cursor: pointer; line-height: 1; padding: 2px;
+}
+.btn-fechar:hover { color: #333; }
+
+/* Grid de campos 2 colunas */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 10px; }
+
+/* Separador de seção */
+.secao-titulo {
+  font-size: 11px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.5px; color: var(--azul-medio);
+  border-bottom: 2px solid var(--cinza-claro);
+  padding-bottom: 4px; margin: 14px 0 8px;
+}
+
+/* Checkboxes booleanos */
+.bool-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0; }
+.bool-item { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.bool-item input[type=checkbox] { width: 15px; height: 15px; cursor: pointer; accent-color: var(--azul-medio); }
+
+/* ================================================
+   PRONTUÁRIOS — LISTAGEM
+================================================ */
+.pront-conteudo { padding: 12px; max-width: 900px; margin: 0 auto; }
+
+.pront-header {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 14px; flex-wrap: wrap;
+}
+.pront-header h2 { font-size: 18px; font-weight: 900; color: var(--azul-escuro); flex: 1; }
+.pront-busca {
+  border: 2px solid var(--cinza-medio); border-radius: 8px;
+  padding: 7px 12px; font-size: 13px; outline: none;
+  transition: border-color 0.2s; width: 200px;
+}
+.pront-busca:focus { border-color: var(--azul-claro); }
+
+.pront-lista { display: flex; flex-direction: column; gap: 8px; }
+
+.pront-card {
+  background: white; border-radius: 10px;
+  padding: 12px 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  display: flex; align-items: center; gap: 12px;
+  cursor: pointer; transition: all 0.2s; border-left: 4px solid var(--cinza-medio);
+}
+.pront-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.14); transform: translateY(-1px); }
+.pront-card.idoso   { border-left-color: var(--roxo); }
+.pront-card.gestante{ border-left-color: var(--rosa); }
+.pront-card.bebe    { border-left-color: var(--azul-claro); }
+
+.pront-card-icon { font-size: 26px; }
+.pront-card-info { flex: 1; }
+.pront-card-nome { font-size: 15px; font-weight: 800; color: var(--texto-escuro); }
+.pront-card-sub  { font-size: 11px; color: #888; margin-top: 2px; }
+.pront-card-badge {
+  font-size: 10px; font-weight: 700; padding: 3px 8px;
+  border-radius: 12px; text-transform: uppercase;
+}
+.badge-saudavel  { background: #d5f5e3; color: #145a32; }
+.badge-prefragil { background: #fef9e7; color: #7d6608; }
+.badge-fragil    { background: #fadbd8; color: #7b241c; }
+.badge-normal    { background: #e8f4fd; color: var(--azul-escuro); }
+
+.pront-card-alerta {
+  font-size: 10px; font-weight: 700; padding: 3px 8px;
+  border-radius: 12px; background: #fadbd8; color: var(--vermelho);
+}
+
+.vazio-msg {
+  text-align: center; padding: 40px 20px;
+  color: #aaa; font-size: 14px;
+}
+.vazio-msg div { font-size: 40px; margin-bottom: 10px; }
+
+/* ================================================
+   DASHBOARD / RELATÓRIOS
+================================================ */
+.relatorio-conteudo { padding: 14px; max-width: 900px; margin: 0 auto; }
+
+.dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 12px; margin-bottom: 20px; }
+
+.dash-card {
+  background: white; border-radius: 12px;
+  padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  text-align: center;
+}
+.dash-card-numero { font-size: 32px; font-weight: 900; }
+.dash-card-label  { font-size: 11px; color: #888; font-weight: 600; text-transform: uppercase; margin-top: 4px; }
+
+.dash-card.azul   .dash-card-numero { color: var(--azul-medio); }
+.dash-card.verde  .dash-card-numero { color: var(--verde); }
+.dash-card.roxo   .dash-card-numero { color: var(--roxo); }
+.dash-card.rosa   .dash-card-numero { color: var(--rosa); }
+.dash-card.vermelho .dash-card-numero { color: var(--vermelho); }
+.dash-card.amarelo  .dash-card-numero { color: var(--amarelo); }
+
+.dash-secao-titulo {
+  font-size: 14px; font-weight: 800; color: var(--azul-escuro);
+  margin-bottom: 10px; padding-bottom: 6px;
+  border-bottom: 2px solid var(--cinza-claro);
+}
+
+.agenda-lista { display: flex; flex-direction: column; gap: 6px; }
+.agenda-item {
+  background: white; border-radius: 8px;
+  padding: 10px 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  display: flex; align-items: center; gap: 10px;
+}
+.agenda-item.urgente { border-left: 4px solid var(--vermelho); }
+.agenda-item.proxima { border-left: 4px solid var(--amarelo); }
+.agenda-item.ok      { border-left: 4px solid var(--verde); }
+.agenda-data { font-size: 11px; font-weight: 700; color: #888; min-width: 80px; }
+.agenda-nome { font-size: 13px; font-weight: 700; flex: 1; }
+.agenda-tipo { font-size: 10px; color: #aaa; }
+
+/* ================================================
+   TOAST
+================================================ */
+#toast {
+  position: fixed; bottom: 20px; left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--azul-escuro); color: white;
+  padding: 10px 20px; border-radius: 20px;
+  font-size: 13px; font-weight: 600;
+  z-index: 9999; transition: transform 0.3s ease;
+  pointer-events: none;
+}
+#toast.visivel { transform: translateX(-50%) translateY(0); }
+
+/* ================================================
+   ÁREA DE IMPRESSÃO
+================================================ */
+#area-impressao {
+  display: none; position: fixed; left: -9999px;
+  top: 0; width: 1200px; background: white; padding: 20px; z-index: -1;
+}
+.impressao-header { text-align: center; border-bottom: 3px solid var(--azul-escuro); padding-bottom: 12px; margin-bottom: 16px; }
+.impressao-header h2 { font-size: 18px; font-weight: 900; color: var(--azul-escuro); }
+.impressao-info { display: flex; justify-content: center; gap: 24px; margin-top: 8px; font-size: 13px; flex-wrap: wrap; }
+.impressao-info span { font-weight: 700; }
+.impressao-info b { color: var(--azul-medio); }
+.impressao-grid { display: grid; grid-template-columns: repeat(15, 1fr); gap: 3px; }
+.impressao-celula {
+  border: 1px solid #ccc; border-radius: 4px; padding: 4px 3px;
+  min-height: 60px; height: auto; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; font-size: 9px;
+  text-align: center; overflow: visible;
+}
+.impressao-celula.verde   { background: #d5f5e3; border-color: #27ae60; }
+.impressao-celula.vermelho{ background: #fadbd8; border-color: #e74c3c; }
+.impressao-celula.amarelo { background: #fef9e7; border-color: #f39c12; }
+.impressao-codigo { font-weight: 800; color: #555; font-size: 8px; line-height: 1.2; }
+.impressao-valor  { font-weight: 700; font-size: 9px; word-break: break-all; overflow-wrap: break-word; line-height: 1.3; max-width: 100%; white-space: normal; }
+.impressao-footer { margin-top: 16px; border-top: 2px solid #eee; padding-top: 10px; display: flex; justify-content: space-between; font-size: 12px; color: #666; }
+
+/* ================================================
+   RESPONSIVO
+================================================ */
+@media (max-width: 600px) {
+  #cabecalho h1 { font-size: 10px; }
+  .aba-btn { font-size: 9px; padding: 6px 8px; }
+  .campo-grupo input, .campo-grupo select { width: 72px; font-size: 10px; }
+  #grid-mapa { gap: 3px; }
+  .celula { min-height: 46px; border-radius: 5px; }
+  .celula-codigo { font-size: 8px; } .celula-valor { font-size: 8px; }
+  .btn { font-size: 9px; padding: 5px 8px; }
+  .modal-box { padding: 16px; }
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  .pront-busca { width: 130px; }
+}
+@media (max-width: 400px) {
+  .campo-grupo input, .campo-grupo select { width: 62px; }
+  .celula { min-height: 40px; padding: 2px 1px; }
+  .celula-codigo { font-size: 7px; } .celula-valor { font-size: 7px; }
+}
+
+/* Datas em grid */
+.datas-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.datas-grid .campo-grupo { width: 100%; align-items: flex-start; }
+.datas-grid .campo-grupo label {
+  font-size: 10px; font-weight: 700; color: #888;
+  text-transform: none; letter-spacing: 0; opacity: 1;
+}
+.datas-grid .campo-grupo input {
+  width: 100%;
+  background: white;
+  border: 2px solid var(--cinza-medio);
+  color: var(--texto-escuro);
+  border-radius: 6px;
+  padding: 6px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: left;
+  outline: none;
+}
+.datas-grid .campo-grupo input:focus { border-color: var(--azul-claro); }
+@media (max-width: 500px) { .datas-grid { grid-template-columns: repeat(3, 1fr); } }
+</style>
+</head>
+<body>
+
+<!-- ================================================
+     CABEÇALHO GLOBAL
+================================================ -->
+<div id="cabecalho">
+  <h1>🏥 AMA UBS INTEGRADA JD. SÃO FRANCISCO II</h1>
+  <nav class="nav-abas">
+    <button class="aba-btn ativa" onclick="mudarAba('mapa')">🗺 Mapa</button>
+    <button class="aba-btn" onclick="mudarAba('idoso')">👴 Idoso</button>
+    <button class="aba-btn" onclick="mudarAba('gestante')">🤰 Gestante</button>
+    <button class="aba-btn" onclick="mudarAba('bebe')">👶 Bebê</button>
+    <button class="aba-btn" onclick="mudarAba('relatorios')">📊 Relatórios</button>
+  </nav>
+</div>
+
+<!-- ================================================
+     ABA: MAPA TERRITORIAL
+================================================ -->
+<div id="aba-mapa" class="aba-conteudo ativa">
+  <div id="mapa-controles">
+    <div class="campos-topo">
+      <div class="campo-grupo"><label>Equipe</label><input type="text" id="campo-equipe" placeholder="Ex: A" maxlength="20"></div>
+      <div class="campo-grupo"><label>Área</label><input type="text" id="campo-area" placeholder="Ex: 01" maxlength="20"></div>
+      <div class="campo-grupo"><label>Ano</label><input type="number" id="campo-ano" placeholder="2025" min="2020" max="2099"></div>
+      <div class="campo-grupo"><label>ACS</label><input type="text" id="campo-acs" placeholder="Nome" maxlength="30"></div>
+      <div class="campo-grupo">
+        <label>Mês</label>
+        <select id="campo-mes">
+          <option value="">Mês</option>
+          <option>Janeiro</option><option>Fevereiro</option><option>Março</option>
+          <option>Abril</option><option>Maio</option><option>Junho</option>
+          <option>Julho</option><option>Agosto</option><option>Setembro</option>
+          <option>Outubro</option><option>Novembro</option><option>Dezembro</option>
+        </select>
+      </div>
+    </div>
+    <div class="botoes-acao">
+      <button class="btn btn-pdf" onclick="gerarPDF()">📄 PDF</button>
+      <button class="btn btn-export" onclick="exportarBackup()">💾 Backup</button>
+      <button class="btn btn-reset" onclick="resetarMes()">🗑 Resetar</button>
+    <button class="btn btn-reset" style="background:#e67e22" onclick="resetarVisitas()">🧹 Limpar Visitas</button>
+      <button class="btn btn-export" onclick="importarBackup()">📥 Importar</button>
+      <input type="file" id="input-importar" accept=".json" style="display:none" onchange="processarImportacao(event)">
+    </div>
+    <div class="legenda">
+      <div class="legenda-item"><div class="legenda-cor" style="background:#a9dfbf;border-color:#27ae60"></div><span>Visitado</span></div>
+      <div class="legenda-item"><div class="legenda-cor" style="background:#f5b7b1;border-color:#e74c3c"></div><span>Ausente</span></div>
+      <div class="legenda-item"><div class="legenda-cor" style="background:#fad7a0;border-color:#f39c12"></div><span>X</span></div>
+      <div class="legenda-item"><div class="legenda-cor" style="background:white;border-color:#bdc3c7"></div><span>Vazio</span></div>
+      <div class="legenda-item"><span style="font-size:9px">⚠ Obs</span></div>
+    </div>
+    <div class="contadores">
+      <div class="contador-item" id="cnt-total">Total: 263</div>
+      <div class="contador-item" id="cnt-visitados" style="color:#2ecc71">✓ 0</div>
+      <div class="contador-item" id="cnt-ausentes" style="color:#ff6b6b">✗ 0</div>
+      <div class="contador-item" id="cnt-x" style="color:#f1c40f">X 0</div>
+      <div class="contador-item" id="cnt-vazios">Vazios: 263</div>
+    </div>
+  </div>
+
+  <div id="conteudo-mapa">
+    <div id="grid-mapa"></div>
+  </div>
+</div>
+
+<!-- ================================================
+     ABA: IDOSO
+================================================ -->
+<div id="aba-idoso" class="aba-conteudo">
+  <div class="pront-conteudo">
+    <div class="pront-header">
+      <h2>👴 Prontuário do Idoso</h2>
+      <input type="text" class="pront-busca" id="busca-idoso" placeholder="🔍 Buscar..." oninput="renderListaIdosos()">
+      <button class="btn btn-roxo" onclick="abrirModalIdoso(null)">+ Novo</button>
+    </div>
+    <div class="pront-lista" id="lista-idosos"></div>
+  </div>
+</div>
+
+<!-- ================================================
+     ABA: GESTANTE
+================================================ -->
+<div id="aba-gestante" class="aba-conteudo">
+  <div class="pront-conteudo">
+    <div class="pront-header">
+      <h2>🤰 Prontuário da Gestante</h2>
+      <input type="text" class="pront-busca" id="busca-gestante" placeholder="🔍 Buscar..." oninput="renderListaGestantes()">
+      <button class="btn btn-roxo" style="background:var(--rosa)" onclick="abrirModalGestante(null)">+ Nova</button>
+    </div>
+    <div class="pront-lista" id="lista-gestantes"></div>
+  </div>
+</div>
+
+<!-- ================================================
+     ABA: BEBÊ
+================================================ -->
+<div id="aba-bebe" class="aba-conteudo">
+  <div class="pront-conteudo">
+    <div class="pront-header">
+      <h2>👶 Prontuário do Bebê</h2>
+      <input type="text" class="pront-busca" id="busca-bebe" placeholder="🔍 Buscar..." oninput="renderListaBebes()">
+      <button class="btn btn-azul" onclick="abrirModalBebe(null)">+ Novo</button>
+    </div>
+    <div class="pront-lista" id="lista-bebes"></div>
+  </div>
+</div>
+
+<!-- ================================================
+     ABA: RELATÓRIOS
+================================================ -->
+<div id="aba-relatorios" class="aba-conteudo">
+  <div class="relatorio-conteudo">
+    <h2 style="font-size:18px;font-weight:900;color:var(--azul-escuro);margin-bottom:14px">📊 Relatórios & Dashboard</h2>
+
+    <div class="dash-grid" id="dash-cards"></div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px">
+      <div>
+        <div class="dash-secao-titulo">📅 Retornos esta semana</div>
+        <div class="agenda-lista" id="agenda-semana"></div>
+      </div>
+      <div>
+        <div class="dash-secao-titulo">📅 Retornos este mês</div>
+        <div class="agenda-lista" id="agenda-mes"></div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px">
+      <div class="dash-secao-titulo">📄 Exportar Relatórios</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-pdf" onclick="gerarPDFIdosos()">📄 PDF Idosos</button>
+        <button class="btn btn-pdf" style="background:var(--rosa)" onclick="gerarPDFGestantes()">📄 PDF Gestantes</button>
+        <button class="btn btn-pdf" style="background:var(--azul-claro)" onclick="gerarPDFBebes()">📄 PDF Bebês</button>
+        <button class="btn btn-export" onclick="exportarTudoBackup()">💾 Backup Geral</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================
+     MODAL: MAPA (célula)
+================================================ -->
+<div id="overlay-mapa" class="overlay-modal" onclick="fecharModalMapaFora(event)">
+  <div class="modal-box" style="position:relative">
+    <button class="btn-fechar" onclick="fecharModalMapa()">✕</button>
+    <div class="modal-titulo-box" id="modal-mapa-titulo">F001</div>
+    <div class="modal-subtitulo-box">Registrar visita</div>
+
+    <label class="modal-label">Nome do morador</label>
+    <input type="text" class="modal-input upper" id="modal-nome-input" placeholder="Digite o nome..." maxlength="40">
+
+    <div class="modal-opcoes">
+      <button class="btn-opcao btn-ausente" id="btn-ausente" onclick="selecionarOpcao('AUSENTE')">🔴 AUSENTE</button>
+      <button class="btn-opcao btn-x"       id="btn-x"       onclick="selecionarOpcao('X')">🟡 X</button>
+    </div>
+
+    <label class="modal-label">Observação</label>
+    <textarea class="modal-textarea" id="modal-obs-input" placeholder="Observações sobre esta família..." maxlength="300"></textarea>
+
+    <div class="modal-acoes">
+      <button class="btn-secundario" onclick="limparCelula()">Limpar</button>
+      <button class="btn-salvar" onclick="salvarCelula()">✓ Salvar</button>
+    </div>
+
+    <!-- Prontuários vinculados -->
+    <div id="modal-pront-links" style="margin-top:12px"></div>
+  </div>
+</div>
+
+<!-- ================================================
+     MODAL: IDOSO
+================================================ -->
+<div id="overlay-idoso" class="overlay-modal" onclick="fecharModalFora(event,'overlay-idoso')">
+  <div class="modal-box largo" style="position:relative">
+    <button class="btn-fechar" onclick="fecharModal('overlay-idoso')">✕</button>
+    <div class="modal-titulo-box">👴 Prontuário do Idoso</div>
+
+    <input type="hidden" id="idoso-id">
+
+    <div class="grid-2">
+      <div>
+        <label class="modal-label">Código Família</label>
+        <input type="text" class="modal-input upper" id="idoso-familia" placeholder="Ex: F013" maxlength="10">
+      </div>
+      <div>
+        <label class="modal-label">Prontuário</label>
+        <input type="text" class="modal-input" id="idoso-prontuario" placeholder="Nº prontuário">
+      </div>
+    </div>
+
+    <label class="modal-label">Nome completo</label>
+    <input type="text" class="modal-input upper" id="idoso-nome" placeholder="Nome do paciente" maxlength="60">
+
+    <div class="grid-2">
+      <div>
+        <label class="modal-label">Data de Nascimento</label>
+        <input type="date" class="modal-input" id="idoso-nascimento" onchange="calcularIdadeIdoso()">
+      </div>
+      <div>
+        <label class="modal-label">Idade</label>
+        <input type="text" class="modal-input" id="idoso-idade" placeholder="Auto" readonly style="background:#f8f8f8">
+      </div>
+    </div>
+
+    <label class="modal-label">Cartão SUS</label>
+    <input type="text" class="modal-input" id="idoso-sus" placeholder="Número do SUS" maxlength="20">
+
+    <div class="secao-titulo">📋 AMPI-AB</div>
+    <div class="grid-2">
+      <div>
+        <label class="modal-label">Data de Realização</label>
+        <input type="date" class="modal-input" id="idoso-data-ampi" onchange="calcularRetornoIdoso()">
+      </div>
+      <div>
+        <label class="modal-label">Classificação AMPI-AB</label>
+        <select class="modal-select" id="idoso-ampi" onchange="calcularRetornoIdoso()">
+          <option value="">Selecione...</option>
+          <option value="saudavel">Saudável</option>
+          <option value="prefragil">Pré-frágil</option>
+          <option value="fragil">Frágil</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <label class="modal-label">Data de Retorno</label>
+        <input type="text" class="modal-input" id="idoso-retorno" placeholder="Auto" readonly style="background:#f8f8f8">
+      </div>
+      <div>
+        <label class="modal-label">PTS</label>
+        <select class="modal-select" id="idoso-pts">
+          <option value="nao">Não</option>
+          <option value="sim">Sim</option>
+        </select>
+      </div>
+    </div>
+
+    <label class="modal-label">Observações</label>
+    <textarea class="modal-textarea" id="idoso-obs" placeholder="Observações clínicas..." maxlength="500"></textarea>
+
+    <div class="modal-acoes">
+      <button class="btn-perigo" id="btn-excluir-idoso" onclick="excluirIdoso()">Excluir</button>
+      <button class="btn-secundario" onclick="fecharModal('overlay-idoso')">Cancelar</button>
+      <button class="btn-salvar" onclick="salvarIdoso()">✓ Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================
+     MODAL: GESTANTE
+================================================ -->
+<div id="overlay-gestante" class="overlay-modal" onclick="fecharModalFora(event,'overlay-gestante')">
+  <div class="modal-box largo" style="position:relative">
+    <button class="btn-fechar" onclick="fecharModal('overlay-gestante')">✕</button>
+    <div class="modal-titulo-box">🤰 Prontuário da Gestante</div>
+
+    <input type="hidden" id="gestante-id">
+
+    <div class="grid-2">
+      <div>
+        <label class="modal-label">Código Família</label>
+        <input type="text" class="modal-input upper" id="gestante-familia" placeholder="Ex: F013" maxlength="10">
+      </div>
+      <div>
+        <label class="modal-label">Previsão de Parto</label>
+        <input type="date" class="modal-input" id="gestante-parto">
+      </div>
+    </div>
+
+    <label class="modal-label">Nome completo</label>
+    <input type="text" class="modal-input upper" id="gestante-nome" placeholder="Nome da gestante" maxlength="60">
+
+    <label class="modal-label">Endereço</label>
+    <input type="text" class="modal-input" id="gestante-endereco" placeholder="Endereço" maxlength="100">
+
+    <div class="secao-titulo">📅 Visitas (datas)</div>
+    <div class="datas-grid" id="gestante-visitas-grid"></div>
+
+    <div class="secao-titulo">🏥 Consultas (datas)</div>
+    <div class="datas-grid" id="gestante-consultas-grid"></div>
+
+    <div class="secao-titulo">🧪 Exames</div>
+    <div class="grid-3">
+      <div>
+        <label class="modal-label">1º Trimestre</label>
+        <input type="date" class="modal-input" id="gestante-exam1">
+      </div>
+      <div>
+        <label class="modal-label">2º Trimestre</label>
+        <input type="date" class="modal-input" id="gestante-exam2">
+      </div>
+      <div>
+        <label class="modal-label">3º Trimestre</label>
+        <input type="date" class="modal-input" id="gestante-exam3">
+      </div>
+    </div>
+
+    <div class="secao-titulo">✅ Procedimentos</div>
+    <div class="bool-row">
+      <label class="bool-item"><input type="checkbox" id="gest-strepto"> Strepto</label>
+      <label class="bool-item"><input type="checkbox" id="gest-odonto"> Odonto</label>
+      <label class="bool-item"><input type="checkbox" id="gest-vacinas"> Vacinas</label>
+      <label class="bool-item"><input type="checkbox" id="gest-sifilis"> Sífilis</label>
+    </div>
+
+    <label class="modal-label">Observações</label>
+    <textarea class="modal-textarea" id="gestante-obs" placeholder="Observações..." maxlength="500"></textarea>
+
+    <div class="modal-acoes">
+      <button class="btn-perigo" id="btn-excluir-gestante" onclick="excluirGestante()">Excluir</button>
+      <button class="btn-secundario" onclick="fecharModal('overlay-gestante')">Cancelar</button>
+      <button class="btn-salvar" style="background:var(--rosa)" onclick="salvarGestante()">✓ Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================
+     MODAL: BEBÊ
+================================================ -->
+<div id="overlay-bebe" class="overlay-modal" onclick="fecharModalFora(event,'overlay-bebe')">
+  <div class="modal-box largo" style="position:relative">
+    <button class="btn-fechar" onclick="fecharModal('overlay-bebe')">✕</button>
+    <div class="modal-titulo-box">👶 Prontuário do Bebê</div>
+
+    <input type="hidden" id="bebe-id">
+
+    <div class="grid-2">
+      <div>
+        <label class="modal-label">Código Família</label>
+        <input type="text" class="modal-input upper" id="bebe-familia" placeholder="Ex: F013" maxlength="10">
+      </div>
+      <div>
+        <label class="modal-label">Peso ao Nascimento (g)</label>
+        <input type="number" class="modal-input" id="bebe-peso" placeholder="Ex: 3200">
+      </div>
+    </div>
+
+    <label class="modal-label">Nome do bebê</label>
+    <input type="text" class="modal-input upper" id="bebe-nome" placeholder="Nome" maxlength="60">
+
+    <div class="grid-2">
+      <div>
+        <label class="modal-label">Data de Nascimento</label>
+        <input type="date" class="modal-input" id="bebe-nascimento" onchange="calcularIdadeBebe()">
+      </div>
+      <div>
+        <label class="modal-label">Idade (meses)</label>
+        <input type="text" class="modal-input" id="bebe-idade" placeholder="Auto" readonly style="background:#f8f8f8">
+      </div>
+    </div>
+
+    <label class="modal-label">Endereço</label>
+    <input type="text" class="modal-input" id="bebe-endereco" placeholder="Endereço" maxlength="100">
+
+    <div class="secao-titulo">📅 Visitas (datas)</div>
+    <div class="datas-grid" id="bebe-visitas-grid"></div>
+
+    <div class="secao-titulo">🏥 Consultas (datas)</div>
+    <div class="datas-grid" id="bebe-consultas-grid"></div>
+
+    <div class="secao-titulo">🍼 Alimentação</div>
+    <div class="bool-row">
+      <label class="bool-item"><input type="checkbox" id="bebe-leite-mat"> Leite Materno</label>
+      <label class="bool-item"><input type="checkbox" id="bebe-exclusivo"> Exclusivo</label>
+      <label class="bool-item"><input type="checkbox" id="bebe-formula"> Fórmula</label>
+      <label class="bool-item"><input type="checkbox" id="bebe-intro-alim"> Intro Alimentar</label>
+      <label class="bool-item"><input type="checkbox" id="bebe-doce"> Doce</label>
+      <label class="bool-item"><input type="checkbox" id="bebe-salgado"> Salgado</label>
+      <label class="bool-item"><input type="checkbox" id="bebe-ame"> Participa AME</label>
+    </div>
+    <div class="grid-2">
+      <div>
+        <label class="modal-label">Data Início Fórmula</label>
+        <input type="date" class="modal-input" id="bebe-data-formula">
+      </div>
+      <div>
+        <label class="modal-label">Data Intro Alimentar</label>
+        <input type="date" class="modal-input" id="bebe-data-intro">
+      </div>
+    </div>
+
+    <label class="modal-label">Observações</label>
+    <textarea class="modal-textarea" id="bebe-obs" placeholder="Observações..." maxlength="500"></textarea>
+
+    <div class="modal-acoes">
+      <button class="btn-perigo" id="btn-excluir-bebe" onclick="excluirBebe()">Excluir</button>
+      <button class="btn-secundario" onclick="fecharModal('overlay-bebe')">Cancelar</button>
+      <button class="btn-salvar" style="background:var(--azul-claro)" onclick="salvarBebe()">✓ Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ÁREA IMPRESSÃO -->
+<div id="area-impressao">
+  <div class="impressao-header">
+    <h2>🏥 AMA UBS INTEGRADA JD. SÃO FRANCISCO II</h2>
+    <div class="impressao-info">
+      <span>Equipe: <b id="imp-equipe"></b></span>
+      <span>Área: <b id="imp-area"></b></span>
+      <span>ACS: <b id="imp-acs"></b></span>
+      <span>Mês: <b id="imp-mes"></b></span>
+      <span>Ano: <b id="imp-ano"></b></span>
+    </div>
+  </div>
+  <div class="impressao-grid" id="impressao-grid"></div>
+  <div class="impressao-footer">
+    <span id="imp-resumo"></span>
+    <span>Gerado em: <b id="imp-data"></b></span>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- ================================================
+     JAVASCRIPT
+================================================ -->
+<script>
+'use strict';
+
+/* ================================================
+   CHAVES DE STORAGE
+================================================ */
+const KEY_DADOS    = 'acs_dados';
+const KEY_CONFIG   = 'acs_config';
+const KEY_OBS      = 'acs_obs';       // observações por célula
+const KEY_IDOSOS   = 'acs_idosos';
+const KEY_GESTANTES= 'acs_gestantes';
+const KEY_BEBES    = 'acs_bebes';
+
+const TOTAL_CELULAS = 263;
+
+/* ================================================
+   HELPERS DE STORAGE
+================================================ */
+const stor = {
+  get: (k, def={}) => { try { return JSON.parse(localStorage.getItem(k)) ?? def; } catch { return def; } },
+  set: (k,v) => localStorage.setItem(k, JSON.stringify(v)),
+  rm:  (k)   => localStorage.removeItem(k),
+};
+
+/* ================================================
+   ABAS
+================================================ */
+function mudarAba(id) {
+  document.querySelectorAll('.aba-btn').forEach((b,i) => b.classList.remove('ativa'));
+  document.querySelectorAll('.aba-conteudo').forEach(c => c.classList.remove('ativa'));
+  const abas = ['mapa','idoso','gestante','bebe','relatorios'];
+  const idx  = abas.indexOf(id);
+  document.querySelectorAll('.aba-btn')[idx].classList.add('ativa');
+  document.getElementById('aba-' + id).classList.add('ativa');
+
+  if (id === 'idoso')     renderListaIdosos();
+  if (id === 'gestante')  renderListaGestantes();
+  if (id === 'bebe')      renderListaBebes();
+  if (id === 'relatorios') renderRelatorios();
+}
+
+/* ================================================
+   MAPA — CONFIGURAÇÃO
+================================================ */
+function salvarConfig() {
+  stor.set(KEY_CONFIG, {
+    equipe: document.getElementById('campo-equipe').value,
+    area:   document.getElementById('campo-area').value,
+    ano:    document.getElementById('campo-ano').value,
+    acs:    document.getElementById('campo-acs').value,
+    mes:    document.getElementById('campo-mes').value,
+  });
+}
+
+function carregarConfig() {
+  const c = stor.get(KEY_CONFIG);
+  if (c.equipe) document.getElementById('campo-equipe').value = c.equipe;
+  if (c.area)   document.getElementById('campo-area').value   = c.area;
+  if (c.ano)    document.getElementById('campo-ano').value    = c.ano;
+  if (c.acs)    document.getElementById('campo-acs').value    = c.acs;
+  if (c.mes)    document.getElementById('campo-mes').value    = c.mes;
+  if (!c.ano)   document.getElementById('campo-ano').value    = new Date().getFullYear();
+}
+
+['campo-equipe','campo-area','campo-ano','campo-acs','campo-mes'].forEach(id => {
+  document.getElementById(id)?.addEventListener('change', salvarConfig);
+  document.getElementById(id)?.addEventListener('input',  salvarConfig);
+});
+
+/* ================================================
+   MAPA — GRID
+================================================ */
+function gerarCodigo(n) { return 'F' + String(n).padStart(3,'0'); }
+
+function renderizarGrid() {
+  const grid = document.getElementById('grid-mapa');
+  grid.innerHTML = '';
+  for (let i = 1; i <= TOTAL_CELULAS; i++) {
+    const codigo = gerarCodigo(i);
+    const cel = document.createElement('div');
+    cel.className = 'celula';
+    cel.id = 'cel-' + codigo;
+    cel.dataset.codigo = codigo;
+    cel.innerHTML = `
+      <span class="celula-codigo">${codigo}</span>
+      <span class="celula-valor"></span>
+      <span class="celula-badges"></span>`;
+    cel.addEventListener('click', () => abrirModalMapa(codigo));
+    grid.appendChild(cel);
+  }
+}
+
+function aplicarEstadoCelula(codigo, valor) {
+  const cel = document.getElementById('cel-' + codigo);
+  if (!cel) return;
+  cel.classList.remove('verde','vermelho','amarelo');
+  const span = cel.querySelector('.celula-valor');
+  if      (!valor)            span.textContent = '';
+  else if (valor==='AUSENTE') { cel.classList.add('vermelho'); span.textContent = 'AUSENTE'; }
+  else if (valor==='X')       { cel.classList.add('amarelo');  span.textContent = 'X'; }
+  else                        { cel.classList.add('verde');    span.textContent = valor.length>10 ? valor.substring(0,10)+'…' : valor; }
+
+  // Observação
+  const obs = stor.get(KEY_OBS,{});
+  if (obs[codigo]) cel.classList.add('tem-obs');
+  else             cel.classList.remove('tem-obs');
+
+  // Badges de prontuários
+  atualizarBadgesCelula(codigo);
+}
+
+function atualizarBadgesCelula(codigo) {
+  const cel = document.getElementById('cel-' + codigo);
+  if (!cel) return;
+  const badges = cel.querySelector('.celula-badges');
+  cel.classList.remove('tem-idoso','tem-gestante','tem-bebe');
+  let b = '';
+  const idosos    = stor.get(KEY_IDOSOS,   []);
+  const gestantes = stor.get(KEY_GESTANTES,[]);
+  const bebes     = stor.get(KEY_BEBES,    []);
+  if (idosos.find(x=>x.familia===codigo))    { b += '<span class="badge-icon">👴</span>'; cel.classList.add('tem-idoso'); }
+  if (gestantes.find(x=>x.familia===codigo)) { b += '<span class="badge-icon">🤰</span>'; cel.classList.add('tem-gestante'); }
+  if (bebes.find(x=>x.familia===codigo))     { b += '<span class="badge-icon">👶</span>'; cel.classList.add('tem-bebe'); }
+  badges.innerHTML = b;
+}
+
+function carregarDados() {
+  const dados = stor.get(KEY_DADOS);
+  for (let i = 1; i <= TOTAL_CELULAS; i++) {
+    const c = gerarCodigo(i);
+    aplicarEstadoCelula(c, dados[c] || '');
+  }
+}
+
+function atualizarContadores() {
+  const dados = stor.get(KEY_DADOS);
+  let v=0, a=0, x=0;
+  for (const val of Object.values(dados)) {
+    if (val==='AUSENTE') a++;
+    else if (val==='X') x++;
+    else if (val) v++;
+  }
+  document.getElementById('cnt-visitados').textContent = `✓ ${v}`;
+  document.getElementById('cnt-ausentes').textContent  = `✗ ${a}`;
+  document.getElementById('cnt-x').textContent         = `X ${x}`;
+  document.getElementById('cnt-vazios').textContent    = `Vazios: ${TOTAL_CELULAS-v-a-x}`;
+}
+
+/* ================================================
+   MAPA — MODAL DA CÉLULA
+================================================ */
+let codigoAtual = null;
+let opcaoSelecionada = null;
+
+function abrirModalMapa(codigo) {
+  codigoAtual = codigo;
+  opcaoSelecionada = null;
+
+  const dados = stor.get(KEY_DADOS);
+  const obs   = stor.get(KEY_OBS,{});
+  const valor = dados[codigo] || '';
+
+  document.getElementById('modal-mapa-titulo').textContent = codigo;
+  document.getElementById('modal-obs-input').value = obs[codigo] || '';
+
+  const input = document.getElementById('modal-nome-input');
+  document.getElementById('btn-ausente').classList.remove('ativo');
+  document.getElementById('btn-x').classList.remove('ativo');
+
+  if (valor==='AUSENTE' || valor==='X') { input.value=''; selecionarOpcao(valor,false); }
+  else input.value = valor;
+
+  // Links de prontuários
+  const linksDiv = document.getElementById('modal-pront-links');
+  let links = '';
+  const idosos    = stor.get(KEY_IDOSOS,[]);
+  const gestantes = stor.get(KEY_GESTANTES,[]);
+  const bebes     = stor.get(KEY_BEBES,[]);
+  const pi = idosos.find(x=>x.familia===codigo);
+  const pg = gestantes.find(x=>x.familia===codigo);
+  const pb = bebes.find(x=>x.familia===codigo);
+  if (pi||pg||pb) {
+    links = '<div style="border-top:1px solid #eee;padding-top:10px;font-size:11px;font-weight:700;color:#888;text-transform:uppercase;margin-bottom:6px">Prontuários vinculados</div>';
+    if (pi) links += `<button class="btn btn-roxo" style="width:100%;margin-bottom:4px;justify-content:center" onclick="fecharModalMapa();mudarAba('idoso');setTimeout(()=>abrirModalIdoso('${pi.id}'),100)">👴 ${pi.nome}</button>`;
+    if (pg) links += `<button class="btn" style="width:100%;margin-bottom:4px;justify-content:center;background:var(--rosa);color:white" onclick="fecharModalMapa();mudarAba('gestante');setTimeout(()=>abrirModalGestante('${pg.id}'),100)">🤰 ${pg.nome}</button>`;
+    if (pb) links += `<button class="btn btn-azul" style="width:100%;margin-bottom:4px;justify-content:center" onclick="fecharModalMapa();mudarAba('bebe');setTimeout(()=>abrirModalBebe('${pb.id}'),100)">👶 ${pb.nome}</button>`;
+  }
+  linksDiv.innerHTML = links;
+
+  document.getElementById('overlay-mapa').classList.add('ativo');
+  setTimeout(()=>input.focus(), 200);
+}
+
+function fecharModalMapa() {
+  document.getElementById('overlay-mapa').classList.remove('ativo');
+  codigoAtual = null; opcaoSelecionada = null;
+}
+function fecharModalMapaFora(e) { if (e.target===document.getElementById('overlay-mapa')) fecharModalMapa(); }
+
+function selecionarOpcao(opcao, limpar=true) {
+  if (opcaoSelecionada===opcao) {
+    opcaoSelecionada=null;
+    document.getElementById('btn-ausente').classList.remove('ativo');
+    document.getElementById('btn-x').classList.remove('ativo');
+    return;
+  }
+  opcaoSelecionada=opcao;
+  document.getElementById('btn-ausente').classList.toggle('ativo', opcao==='AUSENTE');
+  document.getElementById('btn-x').classList.toggle('ativo', opcao==='X');
+  if (limpar) document.getElementById('modal-nome-input').value='';
+}
+
+document.getElementById('modal-nome-input').addEventListener('input', function(){
+  if (this.value.trim()) {
+    opcaoSelecionada=null;
+    document.getElementById('btn-ausente').classList.remove('ativo');
+    document.getElementById('btn-x').classList.remove('ativo');
+  }
+});
+
+function salvarCelula() {
+  if (!codigoAtual) return;
+  const dados = stor.get(KEY_DADOS);
+  const obs   = stor.get(KEY_OBS,{});
+  let valor = opcaoSelecionada || document.getElementById('modal-nome-input').value.trim().toUpperCase();
+  const obsVal = document.getElementById('modal-obs-input').value.trim();
+
+  if (valor) dados[codigoAtual]=valor; else delete dados[codigoAtual];
+  if (obsVal) obs[codigoAtual]=obsVal; else delete obs[codigoAtual];
+
+  stor.set(KEY_DADOS,dados);
+  stor.set(KEY_OBS,obs);
+  aplicarEstadoCelula(codigoAtual,valor);
+  atualizarContadores();
+  fecharModalMapa();
+  mostrarToast('Salvo!');
+}
+
+function limparCelula() {
+  if (!codigoAtual) return;
+  const dados = stor.get(KEY_DADOS);
+  const obs   = stor.get(KEY_OBS,{});
+  delete dados[codigoAtual];
+  delete obs[codigoAtual];
+  stor.set(KEY_DADOS,dados);
+  stor.set(KEY_OBS,obs);
+  aplicarEstadoCelula(codigoAtual,'');
+  atualizarContadores();
+  fecharModalMapa();
+  mostrarToast('Célula limpa!');
+}
+
+function resetarMes() {
+  if (!confirm('⚠️ Limpar TODOS os dados do mapa?\nEsta ação não pode ser desfeita!')) return;
+  stor.rm(KEY_DADOS); stor.rm(KEY_OBS);
+  for (let i=1;i<=TOTAL_CELULAS;i++) aplicarEstadoCelula(gerarCodigo(i),'');
+  atualizarContadores(); mostrarToast('Dados resetados!');
+}
+
+function resetarVisitas() {
+  if (!confirm('Limpar apenas as casas visitadas e ausentes?\nOs X, idosos, gestantes e bebês serão mantidos.')) return;
+  const dados = stor.get(KEY_DADOS);
+  for (const codigo of Object.keys(dados)) {
+    const val = dados[codigo];
+    if (val !== 'X') delete dados[codigo];
+  }
+  stor.set(KEY_DADOS, dados);
+  for (let i = 1; i <= TOTAL_CELULAS; i++) {
+    aplicarEstadoCelula(gerarCodigo(i), dados[gerarCodigo(i)] || '');
+  }
+  atualizarContadores();
+  mostrarToast('Visitas e ausentes limpos!');
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key==='Escape') {
+    fecharModalMapa();
+    ['overlay-idoso','overlay-gestante','overlay-bebe'].forEach(fecharModal);
+  }
+});
+
+/* ================================================
+   MAPA — BACKUP / IMPORTAÇÃO
+================================================ */
+function exportarBackup() {
+  // Exporta TODOS os dados: mapa, obs, idosos, gestantes, bebês e config
+  const config = stor.get(KEY_CONFIG);
+  const backup = {
+    version:    3,
+    config,
+    dados:      stor.get(KEY_DADOS),
+    obs:        stor.get(KEY_OBS,{}),
+    idosos:     stor.get(KEY_IDOSOS,[]),
+    gestantes:  stor.get(KEY_GESTANTES,[]),
+    bebes:      stor.get(KEY_BEBES,[]),
+    exportadoEm: new Date().toISOString(),
+  };
+  const mes = config.mes||'mes';
+  const ano = config.ano||new Date().getFullYear();
+  baixarJSON(backup, `acs_backup_completo_${mes}_${ano}.json`);
+  mostrarToast('Backup completo exportado!');
+}
+
+function importarBackup() {
+  document.getElementById('input-importar').value='';
+  document.getElementById('input-importar').click();
+}
+
+function processarImportacao(event) {
+  const file = event.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const bk = JSON.parse(e.target.result);
+      if (typeof bk !== 'object') { mostrarToast('Arquivo inválido!'); return; }
+
+      const info = bk.config?.mes && bk.config?.ano ? ` (${bk.config.mes}/${bk.config.ano})` : '';
+      const pronts = [];
+      if (bk.idosos?.length)    pronts.push(`${bk.idosos.length} idoso(s)`);
+      if (bk.gestantes?.length) pronts.push(`${bk.gestantes.length} gestante(s)`);
+      if (bk.bebes?.length)     pronts.push(`${bk.bebes.length} bebê(s)`);
+      const prontsInfo = pronts.length ? `\nProntuários: ${pronts.join(', ')}` : '';
+
+      if (!confirm(`Importar backup completo${info}?${prontsInfo}\n\nSubstitui TODOS os dados atuais.`)) return;
+
+      // Config e mapa
+      if (bk.config) { stor.set(KEY_CONFIG, bk.config); carregarConfig(); }
+      if (bk.dados)  stor.set(KEY_DADOS, bk.dados);     else stor.rm(KEY_DADOS);
+      if (bk.obs)    stor.set(KEY_OBS, bk.obs);         else stor.rm(KEY_OBS);
+
+      // Prontuários (versão 2+ e 3)
+      if (bk.idosos)    stor.set(KEY_IDOSOS, bk.idosos);       else stor.rm(KEY_IDOSOS);
+      if (bk.gestantes) stor.set(KEY_GESTANTES, bk.gestantes); else stor.rm(KEY_GESTANTES);
+      if (bk.bebes)     stor.set(KEY_BEBES, bk.bebes);         else stor.rm(KEY_BEBES);
+
+      // Reatualiza grid do mapa
+      for (let i=1; i<=TOTAL_CELULAS; i++) {
+        const c = gerarCodigo(i);
+        aplicarEstadoCelula(c, bk.dados?.[c] || '');
+      }
+
+      atualizarContadores();
+      mostrarToast('Backup completo importado!');
+    } catch(err) { mostrarToast('Erro ao ler arquivo!'); console.error(err); }
+  };
+  reader.readAsText(file);
+}
+
+function exportarTudoBackup() {
+  const backup = {
+    version: 2,
+    config:    stor.get(KEY_CONFIG),
+    dados:     stor.get(KEY_DADOS),
+    obs:       stor.get(KEY_OBS,{}),
+    idosos:    stor.get(KEY_IDOSOS,[]),
+    gestantes: stor.get(KEY_GESTANTES,[]),
+    bebes:     stor.get(KEY_BEBES,[]),
+    exportadoEm: new Date().toISOString(),
+  };
+  baixarJSON(backup, `acs_backup_geral_${new Date().toISOString().slice(0,10)}.json`);
+  mostrarToast('Backup geral exportado!');
+}
+
+function baixarJSON(obj, nome) {
+  const blob = new Blob([JSON.stringify(obj,null,2)],{type:'application/json'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href=url; a.download=nome; a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ================================================
+   MAPA — PDF
+================================================ */
+async function gerarPDF() {
+  mostrarToast('Gerando PDF...');
+  const config = stor.get(KEY_CONFIG);
+  document.getElementById('imp-equipe').textContent = config.equipe||'-';
+  document.getElementById('imp-area').textContent   = config.area  ||'-';
+  document.getElementById('imp-acs').textContent    = config.acs   ||'-';
+  document.getElementById('imp-mes').textContent    = config.mes   ||'-';
+  document.getElementById('imp-ano').textContent    = config.ano   ||'-';
+  document.getElementById('imp-data').textContent   = new Date().toLocaleDateString('pt-BR');
+
+  const dados=stor.get(KEY_DADOS); let v=0,a=0,x=0;
+  for (const val of Object.values(dados)) {
+    if(val==='AUSENTE')a++; else if(val==='X')x++; else if(val)v++;
+  }
+  document.getElementById('imp-resumo').textContent = `Visitados:${v} | Ausentes:${a} | X:${x} | Vazios:${TOTAL_CELULAS-v-a-x}`;
+
+  const impGrid = document.getElementById('impressao-grid');
+  impGrid.innerHTML='';
+  for (let i=1;i<=TOTAL_CELULAS;i++) {
+    const c=gerarCodigo(i), val=dados[c]||'';
+    let cls='', txt='';
+    if(val==='AUSENTE'){cls='vermelho';txt='AUSENTE';}
+    else if(val==='X'){cls='amarelo';txt='X';}
+    else if(val){cls='verde';txt=val;}
+    impGrid.innerHTML+=`<div class="impressao-celula ${cls}"><span class="impressao-codigo">${c}</span><span class="impressao-valor">${txt}</span></div>`;
+  }
+
+  const area=document.getElementById('area-impressao');
+  area.style.cssText='display:block;position:absolute;left:0;top:0;width:1200px;z-index:99999;background:white;padding:20px';
+  try {
+    const canvas=await html2canvas(area,{scale:1.5,useCORS:true,logging:false});
+    const {jsPDF}=window.jspdf;
+    const pdf=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+    const imgData=canvas.toDataURL('image/jpeg',0.92);
+    const W=pdf.internal.pageSize.getWidth(), H=pdf.internal.pageSize.getHeight();
+    const r=Math.min(W/canvas.width,H/canvas.height);
+    const w=canvas.width*r, h=canvas.height*r;
+    pdf.addImage(imgData,'JPEG',(W-w)/2,(H-h)/2,w,h);
+
+    // ── Página 2: tabela completa das células ──────────────────────────
+    pdf.addPage('a4','landscape');
+    const idosos2    = stor.get(KEY_IDOSOS,[]);
+    const gestantes2 = stor.get(KEY_GESTANTES,[]);
+    const bebes2     = stor.get(KEY_BEBES,[]);
+    const obs2       = stor.get(KEY_OBS,{});
+
+    // Cabeçalho
+    pdf.setFillColor(26,58,92);
+    pdf.rect(0,0,W,18,'F');
+    pdf.setTextColor(255,255,255);
+    pdf.setFontSize(10); pdf.setFont(undefined,'bold');
+    pdf.text('AMA UBS INTEGRADA JD. SÃO FRANCISCO II — RELATÓRIO COMPLETO DE CÉLULAS',W/2,8,{align:'center'});
+    pdf.setFontSize(8);
+    pdf.text(`Equipe: ${config.equipe||'-'}  |  ACS: ${config.acs||'-'}  |  Mês: ${config.mes||'-'}/${config.ano||'-'}  |  Gerado: ${new Date().toLocaleDateString('pt-BR')}`,W/2,14,{align:'center'});
+    pdf.setTextColor(0,0,0);
+
+    // Cabeçalho da tabela
+    const mg2=8, colW=[18,38,18,50,50,50,50], cols=colW;
+    const colX=[mg2];
+    for(let i=1;i<cols.length;i++) colX.push(colX[i-1]+cols[i-1]);
+
+    let y2=22;
+    pdf.setFillColor(240,244,248);
+    pdf.rect(mg2,y2-4,W-mg2*2,6,'F');
+    pdf.setFontSize(7); pdf.setFont(undefined,'bold'); pdf.setTextColor(50,50,50);
+    const headers=['Código','Morador','Status','Observação','Idoso','Gestante','Bebê'];
+    headers.forEach((h,i)=>pdf.text(h,colX[i]+1,y2));
+    pdf.setDrawColor(180,180,180);
+    pdf.line(mg2,y2+2,W-mg2,y2+2);
+    y2+=6;
+
+    pdf.setFont(undefined,'normal'); pdf.setFontSize(7);
+
+    const ampiAbrev={saudavel:'S',prefragil:'PF',fragil:'F'};
+
+    for(let i=1;i<=TOTAL_CELULAS;i++){
+      if(y2>188){ // nova página
+        pdf.addPage('a4','landscape');
+        pdf.setFillColor(26,58,92); pdf.rect(0,0,W,12,'F');
+        pdf.setTextColor(255,255,255); pdf.setFontSize(8); pdf.setFont(undefined,'bold');
+        pdf.text('RELATÓRIO COMPLETO DE CÉLULAS (continuação)',W/2,8,{align:'center'});
+        pdf.setTextColor(0,0,0);
+        y2=18;
+        pdf.setFillColor(240,244,248); pdf.rect(mg2,y2-4,W-mg2*2,6,'F');
+        pdf.setFont(undefined,'bold'); pdf.setFontSize(7); pdf.setTextColor(50,50,50);
+        headers.forEach((h,i2)=>pdf.text(h,colX[i2]+1,y2));
+        pdf.setDrawColor(180,180,180); pdf.line(mg2,y2+2,W-mg2,y2+2);
+        y2+=6; pdf.setFont(undefined,'normal');
+      }
+
+      const c  = gerarCodigo(i);
+      const val = dados[c]||'';
+      const ob  = obs2[c]||'';
+      const pi  = idosos2.find(x=>x.familia===c);
+      const pg  = gestantes2.find(x=>x.familia===c);
+      const pb  = bebes2.find(x=>x.familia===c);
+
+      // Cor de fundo da linha
+      if(val==='AUSENTE')     { pdf.setFillColor(253,231,233); pdf.rect(mg2,y2-3,W-mg2*2,5.5,'F'); }
+      else if(val==='X')      { pdf.setFillColor(254,249,231); pdf.rect(mg2,y2-3,W-mg2*2,5.5,'F'); }
+      else if(val)            { pdf.setFillColor(234,250,241); pdf.rect(mg2,y2-3,W-mg2*2,5.5,'F'); }
+      else if(i%2===0)        { pdf.setFillColor(250,250,252); pdf.rect(mg2,y2-3,W-mg2*2,5.5,'F'); }
+
+      pdf.setTextColor(0,0,0);
+      pdf.text(c,                                            colX[0]+1, y2);
+      pdf.text((val==='AUSENTE'||val==='X'?'':val).substring(0,20), colX[1]+1, y2);
+
+      // Status com cor
+      if(val==='AUSENTE')      { pdf.setTextColor(180,30,30);  pdf.text('AUSENTE',colX[2]+1,y2); pdf.setTextColor(0,0,0); }
+      else if(val==='X')       { pdf.setTextColor(160,110,0);  pdf.text('X',colX[2]+1,y2);       pdf.setTextColor(0,0,0); }
+      else if(val)             { pdf.setTextColor(30,130,60);  pdf.text('OK',colX[2]+1,y2);      pdf.setTextColor(0,0,0); }
+      else                     { pdf.setTextColor(150,150,150);pdf.text('—',colX[2]+1,y2);       pdf.setTextColor(0,0,0); }
+
+      pdf.text(ob.substring(0,28), colX[3]+1, y2);
+
+      // Idoso resumido
+      if(pi){
+        const ampiL = ampiAbrev[pi.ampi]||'?';
+        const idade = pi.nascimento?calcIdade(pi.nascimento)+'a':'';
+        pdf.text(`${pi.nome.substring(0,16)} ${idade} [${ampiL}]${pi.pts==='sim'?' PTS':''}`, colX[4]+1, y2);
+      } else { pdf.setTextColor(180,180,180); pdf.text('—',colX[4]+1,y2); pdf.setTextColor(0,0,0); }
+
+      // Gestante resumida
+      if(pg){
+        const dias = pg.parto?Math.ceil((new Date(pg.parto)-new Date())/(864e5)):null;
+        const partoStr = dias!==null?(dias<0?'Parto OK':dias+'d'):'' ;
+        pdf.text(`${pg.nome.substring(0,16)} ${partoStr}`, colX[5]+1, y2);
+      } else { pdf.setTextColor(180,180,180); pdf.text('—',colX[5]+1,y2); pdf.setTextColor(0,0,0); }
+
+      // Bebê resumido
+      if(pb){
+        const meses = pb.nascimento?(()=>{const d=new Date(pb.nascimento),h=new Date();return(h.getFullYear()-d.getFullYear())*12+(h.getMonth()-d.getMonth());})():null;
+        pdf.text(`${pb.nome.substring(0,16)} ${meses!==null?meses+'m':''}`, colX[6]+1, y2);
+      } else { pdf.setTextColor(180,180,180); pdf.text('—',colX[6]+1,y2); pdf.setTextColor(0,0,0); }
+
+      pdf.setDrawColor(220,220,220);
+      pdf.line(mg2,y2+2.5,W-mg2,y2+2.5);
+      y2+=5.5;
+    }
+
+    // Rodapé legenda
+    y2+=4;
+    pdf.setFontSize(7); pdf.setTextColor(120,120,120);
+    pdf.text('Status: OK=visitado  |  AUSENTE=ausente  |  X=marcado  |  Idoso: S=Saudável PF=Pré-frágil F=Frágil  |  Gestante: dias para parto  |  Bebê: meses de vida',mg2,y2);
+    // ──────────────────────────────────────────────────────────────────
+
+    pdf.save(`acs_visitas_${config.mes||'mes'}_${config.ano||new Date().getFullYear()}.pdf`);
+    mostrarToast('PDF gerado!');
+  } catch(err) { mostrarToast('Erro ao gerar PDF'); console.error(err); }
+  finally { area.style.cssText='display:none;position:fixed;left:-9999px;top:0;z-index:-1'; }
+}
+
+/* ================================================
+   MODAL GENÉRICO
+================================================ */
+function fecharModal(overlayId) {
+  document.getElementById(overlayId)?.classList.remove('ativo');
+}
+function fecharModalFora(e, overlayId) {
+  if (e.target===document.getElementById(overlayId)) fecharModal(overlayId);
+}
+
+/* ================================================
+   IDOSO — CRUD
+================================================ */
+let idosoAtual = null;
+
+function gerarId() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+
+function abrirModalIdoso(id) {
+  idosoAtual = id;
+  const idosos = stor.get(KEY_IDOSOS,[]);
+  const rec = id ? idosos.find(x=>x.id===id) : null;
+
+  document.getElementById('idoso-id').value           = rec?.id||'';
+  document.getElementById('idoso-familia').value      = rec?.familia||'';
+  document.getElementById('idoso-prontuario').value   = rec?.prontuario||'';
+  document.getElementById('idoso-nome').value         = rec?.nome||'';
+  document.getElementById('idoso-nascimento').value   = rec?.nascimento||'';
+  document.getElementById('idoso-idade').value        = rec?.nascimento ? calcIdade(rec.nascimento)+'anos' : '';
+  document.getElementById('idoso-sus').value          = rec?.sus||'';
+  document.getElementById('idoso-data-ampi').value    = rec?.dataAmpi||'';
+  document.getElementById('idoso-ampi').value         = rec?.ampi||'';
+  document.getElementById('idoso-retorno').value      = rec?.retorno||'';
+  document.getElementById('idoso-pts').value          = rec?.pts||'nao';
+  document.getElementById('idoso-obs').value          = rec?.obs||'';
+
+  document.getElementById('btn-excluir-idoso').style.display = rec ? 'block':'none';
+  document.getElementById('overlay-idoso').classList.add('ativo');
+}
+
+function calcularIdadeIdoso() {
+  const nasc = document.getElementById('idoso-nascimento').value;
+  document.getElementById('idoso-idade').value = nasc ? calcIdade(nasc)+' anos' : '';
+  calcularRetornoIdoso();
+}
+
+function calcularRetornoIdoso() {
+  const dataAmpi = document.getElementById('idoso-data-ampi').value;
+  const ampi     = document.getElementById('idoso-ampi').value;
+  if (!dataAmpi || !ampi) { document.getElementById('idoso-retorno').value=''; return; }
+  const d = new Date(dataAmpi);
+  const meses = ampi==='saudavel' ? 12 : 6;
+  d.setMonth(d.getMonth()+meses);
+  document.getElementById('idoso-retorno').value = d.toLocaleDateString('pt-BR');
+}
+
+function calcIdade(nascStr) {
+  const nasc = new Date(nascStr);
+  const hoje = new Date();
+  let anos = hoje.getFullYear()-nasc.getFullYear();
+  if (hoje.getMonth()<nasc.getMonth()||(hoje.getMonth()===nasc.getMonth()&&hoje.getDate()<nasc.getDate())) anos--;
+  return anos;
+}
+
+function salvarIdoso() {
+  const nome = document.getElementById('idoso-nome').value.trim();
+  if (!nome) { mostrarToast('Informe o nome!'); return; }
+  const idosos = stor.get(KEY_IDOSOS,[]);
+  const rec = {
+    id:         document.getElementById('idoso-id').value || gerarId(),
+    familia:    document.getElementById('idoso-familia').value.toUpperCase().trim(),
+    prontuario: document.getElementById('idoso-prontuario').value.trim(),
+    nome:       nome.toUpperCase(),
+    nascimento: document.getElementById('idoso-nascimento').value,
+    sus:        document.getElementById('idoso-sus').value.trim(),
+    dataAmpi:   document.getElementById('idoso-data-ampi').value,
+    ampi:       document.getElementById('idoso-ampi').value,
+    retorno:    document.getElementById('idoso-retorno').value,
+    pts:        document.getElementById('idoso-pts').value,
+    obs:        document.getElementById('idoso-obs').value.trim(),
+  };
+  const idx = idosos.findIndex(x=>x.id===rec.id);
+  if (idx>=0) idosos[idx]=rec; else idosos.push(rec);
+  stor.set(KEY_IDOSOS,idosos);
+  fecharModal('overlay-idoso');
+  renderListaIdosos();
+  atualizarBadgesCelula(rec.familia);
+  mostrarToast('Idoso salvo!');
+}
+
+function excluirIdoso() {
+  if (!confirm('Excluir este prontuário?')) return;
+  let idosos = stor.get(KEY_IDOSOS,[]);
+  const rec  = idosos.find(x=>x.id===idosoAtual);
+  idosos = idosos.filter(x=>x.id!==idosoAtual);
+  stor.set(KEY_IDOSOS,idosos);
+  fecharModal('overlay-idoso');
+  renderListaIdosos();
+  if (rec?.familia) atualizarBadgesCelula(rec.familia);
+  mostrarToast('Excluído!');
+}
+
+function renderListaIdosos() {
+  const busca  = document.getElementById('busca-idoso').value.toLowerCase();
+  const idosos = stor.get(KEY_IDOSOS,[]);
+  const lista  = document.getElementById('lista-idosos');
+  const filtro = idosos.filter(x=>
+    x.nome?.toLowerCase().includes(busca) ||
+    x.familia?.toLowerCase().includes(busca)
+  );
+  if (!filtro.length) { lista.innerHTML='<div class="vazio-msg"><div>👴</div>Nenhum idoso cadastrado</div>'; return; }
+  lista.innerHTML = filtro.map(rec => {
+    const ampiMap = {saudavel:'badge-saudavel',prefragil:'badge-prefragil',fragil:'badge-fragil'};
+    const ampiTxt = {saudavel:'Saudável',prefragil:'Pré-frágil',fragil:'Frágil'};
+    const badgeClass = ampiMap[rec.ampi]||'badge-normal';
+    const badgeTxt   = ampiTxt[rec.ampi]||'Sem AMPI';
+    const alertaRet  = rec.retorno ? alertaRetorno(rec.retorno) : '';
+    return `
+    <div class="pront-card idoso" onclick="abrirModalIdoso('${rec.id}')">
+      <div class="pront-card-icon">👴</div>
+      <div class="pront-card-info">
+        <div class="pront-card-nome">${rec.nome}</div>
+        <div class="pront-card-sub">${rec.familia||''} ${rec.nascimento?'· '+calcIdade(rec.nascimento)+' anos':''} ${rec.pts==='sim'?'· PTS':''}</div>
+      </div>
+      <span class="pront-card-badge ${badgeClass}">${badgeTxt}</span>
+      ${alertaRet}
+    </div>`;
+  }).join('');
+}
+
+/* ================================================
+   GESTANTE — CRUD
+================================================ */
+let gestanteAtual = null;
+
+function gerarDatasGrid(containerId, prefixo, total, valores={}) {
+  const cont = document.getElementById(containerId);
+  if (!cont) return;
+  cont.innerHTML='';
+  for (let i=1;i<=total;i++) {
+    cont.innerHTML+=`
+      <div class="campo-grupo" style="width:100%">
+        <label style="font-size:9px;color:#888;font-weight:700">${i}</label>
+        <input type="date" class="modal-input" id="${prefixo}-${i}" value="${valores[i]||''}" style="width:100%;font-size:11px;padding:5px">
+      </div>`;
+  }
+}
+
+function coletarDatasGrid(prefixo, total) {
+  const obj={};
+  for (let i=1;i<=total;i++) {
+    const v = document.getElementById(`${prefixo}-${i}`)?.value;
+    if (v) obj[i]=v;
+  }
+  return obj;
+}
+
+function abrirModalGestante(id) {
+  gestanteAtual = id;
+  const lista = stor.get(KEY_GESTANTES,[]);
+  const rec   = id ? lista.find(x=>x.id===id) : null;
+
+  document.getElementById('gestante-id').value       = rec?.id||'';
+  document.getElementById('gestante-familia').value  = rec?.familia||'';
+  document.getElementById('gestante-nome').value     = rec?.nome||'';
+  document.getElementById('gestante-parto').value    = rec?.parto||'';
+  document.getElementById('gestante-endereco').value = rec?.endereco||'';
+  document.getElementById('gestante-exam1').value    = rec?.exam1||'';
+  document.getElementById('gestante-exam2').value    = rec?.exam2||'';
+  document.getElementById('gestante-exam3').value    = rec?.exam3||'';
+  document.getElementById('gest-strepto').checked    = rec?.strepto||false;
+  document.getElementById('gest-odonto').checked     = rec?.odonto||false;
+  document.getElementById('gest-vacinas').checked    = rec?.vacinas||false;
+  document.getElementById('gest-sifilis').checked    = rec?.sifilis||false;
+  document.getElementById('gestante-obs').value      = rec?.obs||'';
+
+  gerarDatasGrid('gestante-visitas-grid',  'gv',  15, rec?.visitas ||{});
+  gerarDatasGrid('gestante-consultas-grid','gc',  10, rec?.consultas||{});
+
+  document.getElementById('btn-excluir-gestante').style.display = rec?'block':'none';
+  document.getElementById('overlay-gestante').classList.add('ativo');
+}
+
+function salvarGestante() {
+  const nome = document.getElementById('gestante-nome').value.trim();
+  if (!nome) { mostrarToast('Informe o nome!'); return; }
+  const lista = stor.get(KEY_GESTANTES,[]);
+  const rec = {
+    id:       document.getElementById('gestante-id').value||gerarId(),
+    familia:  document.getElementById('gestante-familia').value.toUpperCase().trim(),
+    nome:     nome.toUpperCase(),
+    parto:    document.getElementById('gestante-parto').value,
+    endereco: document.getElementById('gestante-endereco').value.trim(),
+    exam1:    document.getElementById('gestante-exam1').value,
+    exam2:    document.getElementById('gestante-exam2').value,
+    exam3:    document.getElementById('gestante-exam3').value,
+    strepto:  document.getElementById('gest-strepto').checked,
+    odonto:   document.getElementById('gest-odonto').checked,
+    vacinas:  document.getElementById('gest-vacinas').checked,
+    sifilis:  document.getElementById('gest-sifilis').checked,
+    obs:      document.getElementById('gestante-obs').value.trim(),
+    visitas:  coletarDatasGrid('gv',15),
+    consultas:coletarDatasGrid('gc',10),
+  };
+  const idx = lista.findIndex(x=>x.id===rec.id);
+  if (idx>=0) lista[idx]=rec; else lista.push(rec);
+  stor.set(KEY_GESTANTES,lista);
+  fecharModal('overlay-gestante');
+  renderListaGestantes();
+  atualizarBadgesCelula(rec.familia);
+  mostrarToast('Gestante salva!');
+}
+
+function excluirGestante() {
+  if (!confirm('Excluir este prontuário?')) return;
+  let lista = stor.get(KEY_GESTANTES,[]);
+  const rec = lista.find(x=>x.id===gestanteAtual);
+  lista = lista.filter(x=>x.id!==gestanteAtual);
+  stor.set(KEY_GESTANTES,lista);
+  fecharModal('overlay-gestante');
+  renderListaGestantes();
+  if (rec?.familia) atualizarBadgesCelula(rec.familia);
+  mostrarToast('Excluído!');
+}
+
+function renderListaGestantes() {
+  const busca  = document.getElementById('busca-gestante').value.toLowerCase();
+  const lista  = stor.get(KEY_GESTANTES,[]);
+  const cont   = document.getElementById('lista-gestantes');
+  const filtro = lista.filter(x=>x.nome?.toLowerCase().includes(busca)||x.familia?.toLowerCase().includes(busca));
+  if (!filtro.length) { cont.innerHTML='<div class="vazio-msg"><div>🤰</div>Nenhuma gestante cadastrada</div>'; return; }
+  cont.innerHTML = filtro.map(rec=>{
+    const diasParto = rec.parto ? Math.ceil((new Date(rec.parto)-new Date())/(1000*60*60*24)) : null;
+    const partoBadge = diasParto!==null
+      ? `<span class="pront-card-badge ${diasParto<30?'badge-fragil':diasParto<60?'badge-prefragil':'badge-saudavel'}">${diasParto<0?'Parto realizado':diasParto+'d'}</span>`
+      : '';
+    return `
+    <div class="pront-card gestante" onclick="abrirModalGestante('${rec.id}')">
+      <div class="pront-card-icon">🤰</div>
+      <div class="pront-card-info">
+        <div class="pront-card-nome">${rec.nome}</div>
+        <div class="pront-card-sub">${rec.familia||''} ${rec.parto?'· Parto: '+new Date(rec.parto).toLocaleDateString('pt-BR'):''}</div>
+      </div>
+      ${partoBadge}
+    </div>`;
+  }).join('');
+}
+
+/* ================================================
+   BEBÊ — CRUD
+================================================ */
+let bebeAtual = null;
+
+function calcularIdadeBebe() {
+  const nasc = document.getElementById('bebe-nascimento').value;
+  if (!nasc) { document.getElementById('bebe-idade').value=''; return; }
+  const d = new Date(nasc), h = new Date();
+  const meses = (h.getFullYear()-d.getFullYear())*12+(h.getMonth()-d.getMonth());
+  document.getElementById('bebe-idade').value = meses+' meses';
+}
+
+function abrirModalBebe(id) {
+  bebeAtual = id;
+  const lista = stor.get(KEY_BEBES,[]);
+  const rec   = id ? lista.find(x=>x.id===id) : null;
+
+  document.getElementById('bebe-id').value         = rec?.id||'';
+  document.getElementById('bebe-familia').value    = rec?.familia||'';
+  document.getElementById('bebe-nome').value       = rec?.nome||'';
+  document.getElementById('bebe-nascimento').value = rec?.nascimento||'';
+  document.getElementById('bebe-peso').value       = rec?.peso||'';
+  document.getElementById('bebe-endereco').value   = rec?.endereco||'';
+  document.getElementById('bebe-data-formula').value = rec?.dataFormula||'';
+  document.getElementById('bebe-data-intro').value   = rec?.dataIntro||'';
+  document.getElementById('bebe-obs').value          = rec?.obs||'';
+  ['leite-mat','exclusivo','formula','intro-alim','doce','salgado','ame'].forEach(k=>{
+    document.getElementById('bebe-'+k).checked = rec?.[k.replace('-','')] || false;
+  });
+
+  if (rec?.nascimento) calcularIdadeBebe();
+  else document.getElementById('bebe-idade').value='';
+
+  gerarDatasGrid('bebe-visitas-grid',  'bv', 12, rec?.visitas ||{});
+  gerarDatasGrid('bebe-consultas-grid','bc', 12, rec?.consultas||{});
+
+  document.getElementById('btn-excluir-bebe').style.display = rec?'block':'none';
+  document.getElementById('overlay-bebe').classList.add('ativo');
+}
+
+function salvarBebe() {
+  const nome = document.getElementById('bebe-nome').value.trim();
+  if (!nome) { mostrarToast('Informe o nome!'); return; }
+  const lista = stor.get(KEY_BEBES,[]);
+  const rec = {
+    id:          document.getElementById('bebe-id').value||gerarId(),
+    familia:     document.getElementById('bebe-familia').value.toUpperCase().trim(),
+    nome:        nome.toUpperCase(),
+    nascimento:  document.getElementById('bebe-nascimento').value,
+    peso:        document.getElementById('bebe-peso').value,
+    endereco:    document.getElementById('bebe-endereco').value.trim(),
+    dataFormula: document.getElementById('bebe-data-formula').value,
+    dataIntro:   document.getElementById('bebe-data-intro').value,
+    obs:         document.getElementById('bebe-obs').value.trim(),
+    leitemat:    document.getElementById('bebe-leite-mat').checked,
+    exclusivo:   document.getElementById('bebe-exclusivo').checked,
+    formula:     document.getElementById('bebe-formula').checked,
+    introalim:   document.getElementById('bebe-intro-alim').checked,
+    doce:        document.getElementById('bebe-doce').checked,
+    salgado:     document.getElementById('bebe-salgado').checked,
+    ame:         document.getElementById('bebe-ame').checked,
+    visitas:     coletarDatasGrid('bv',12),
+    consultas:   coletarDatasGrid('bc',12),
+  };
+  const idx = lista.findIndex(x=>x.id===rec.id);
+  if (idx>=0) lista[idx]=rec; else lista.push(rec);
+  stor.set(KEY_BEBES,lista);
+  fecharModal('overlay-bebe');
+  renderListaBebes();
+  atualizarBadgesCelula(rec.familia);
+  mostrarToast('Bebê salvo!');
+}
+
+function excluirBebe() {
+  if (!confirm('Excluir este prontuário?')) return;
+  let lista = stor.get(KEY_BEBES,[]);
+  const rec = lista.find(x=>x.id===bebeAtual);
+  lista = lista.filter(x=>x.id!==bebeAtual);
+  stor.set(KEY_BEBES,lista);
+  fecharModal('overlay-bebe');
+  renderListaBebes();
+  if (rec?.familia) atualizarBadgesCelula(rec.familia);
+  mostrarToast('Excluído!');
+}
+
+function renderListaBebes() {
+  const busca  = document.getElementById('busca-bebe').value.toLowerCase();
+  const lista  = stor.get(KEY_BEBES,[]);
+  const cont   = document.getElementById('lista-bebes');
+  const filtro = lista.filter(x=>x.nome?.toLowerCase().includes(busca)||x.familia?.toLowerCase().includes(busca));
+  if (!filtro.length) { cont.innerHTML='<div class="vazio-msg"><div>👶</div>Nenhum bebê cadastrado</div>'; return; }
+  cont.innerHTML = filtro.map(rec=>{
+    const meses = rec.nascimento ? (() => {
+      const d=new Date(rec.nascimento),h=new Date();
+      return (h.getFullYear()-d.getFullYear())*12+(h.getMonth()-d.getMonth());
+    })() : null;
+    return `
+    <div class="pront-card bebe" onclick="abrirModalBebe('${rec.id}')">
+      <div class="pront-card-icon">👶</div>
+      <div class="pront-card-info">
+        <div class="pront-card-nome">${rec.nome}</div>
+        <div class="pront-card-sub">${rec.familia||''} ${meses!==null?'· '+meses+' meses':''} ${rec.peso?'· '+rec.peso+'g':''}</div>
+      </div>
+      <span class="pront-card-badge badge-normal">${meses!==null?(meses<6?'Neonato':meses<12?'Lactente':'Bebê'):'—'}</span>
+    </div>`;
+  }).join('');
+}
+
+/* ================================================
+   RELATÓRIOS / DASHBOARD
+================================================ */
+function alertaRetorno(retornoStr) {
+  if (!retornoStr) return '';
+  const partes = retornoStr.split('/');
+  if (partes.length!==3) return '';
+  const d = new Date(parseInt(partes[2]),parseInt(partes[1])-1,parseInt(partes[0]));
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const diff = Math.ceil((d-hoje)/(1000*60*60*24));
+  if (diff<0)  return `<span class="pront-card-alerta">Atrasado ${Math.abs(diff)}d</span>`;
+  if (diff<=7) return `<span class="pront-card-alerta">Em ${diff}d</span>`;
+  if (diff<=30)return `<span class="pront-card-badge badge-prefragil">Em ${diff}d</span>`;
+  return '';
+}
+
+function renderRelatorios() {
+  const dados     = stor.get(KEY_DADOS);
+  const idosos    = stor.get(KEY_IDOSOS,[]);
+  const gestantes = stor.get(KEY_GESTANTES,[]);
+  const bebes     = stor.get(KEY_BEBES,[]);
+
+  let v=0,a=0,x=0;
+  for (const val of Object.values(dados)) {
+    if(val==='AUSENTE')a++; else if(val==='X')x++; else if(val)v++;
+  }
+
+  // Cards
+  document.getElementById('dash-cards').innerHTML = `
+    <div class="dash-card verde"><div class="dash-card-numero">${v}</div><div class="dash-card-label">Visitados</div></div>
+    <div class="dash-card vermelho"><div class="dash-card-numero">${a}</div><div class="dash-card-label">Ausentes</div></div>
+    <div class="dash-card amarelo"><div class="dash-card-numero">${x}</div><div class="dash-card-label">Marcados X</div></div>
+    <div class="dash-card roxo"><div class="dash-card-numero">${idosos.length}</div><div class="dash-card-label">Idosos</div></div>
+    <div class="dash-card rosa"><div class="dash-card-numero">${gestantes.length}</div><div class="dash-card-label">Gestantes</div></div>
+    <div class="dash-card azul"><div class="dash-card-numero">${bebes.length}</div><div class="dash-card-label">Bebês</div></div>
+  `;
+
+  // Agenda de retornos
+  const hoje  = new Date(); hoje.setHours(0,0,0,0);
+  const fimSem= new Date(hoje); fimSem.setDate(hoje.getDate()+7);
+  const fimMes= new Date(hoje); fimMes.setDate(hoje.getDate()+30);
+
+  const agenda = idosos.filter(r=>r.retorno).map(r=>{
+    const p=r.retorno.split('/');
+    if(p.length!==3) return null;
+    const d=new Date(parseInt(p[2]),parseInt(p[1])-1,parseInt(p[0]));
+    return {data:d,nome:r.nome,tipo:'👴 Idoso',ampi:r.ampi};
+  }).filter(Boolean).sort((a,b)=>a.data-b.data);
+
+  function renderAgenda(itens) {
+    if (!itens.length) return '<div style="color:#aaa;font-size:12px;padding:10px">Nenhum retorno agendado</div>';
+    return itens.map(item=>{
+      const diff=Math.ceil((item.data-hoje)/(1000*60*60*24));
+      const cls = diff<0?'urgente':diff<=7?'proxima':'ok';
+      return `<div class="agenda-item ${cls}">
+        <div class="agenda-data">${item.data.toLocaleDateString('pt-BR')}</div>
+        <div class="agenda-nome">${item.nome}</div>
+        <div class="agenda-tipo">${item.tipo}</div>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('agenda-semana').innerHTML = renderAgenda(agenda.filter(i=>i.data>=hoje&&i.data<=fimSem));
+  document.getElementById('agenda-mes').innerHTML    = renderAgenda(agenda.filter(i=>i.data>=hoje&&i.data<=fimMes));
+}
+
+/* ================================================
+   PDFs DOS PRONTUÁRIOS
+================================================ */
+async function gerarPDFIdosos() {
+  const idosos = stor.get(KEY_IDOSOS,[]);
+  if (!idosos.length) { mostrarToast('Nenhum idoso cadastrado!'); return; }
+  mostrarToast('Gerando PDF...');
+
+  const {jsPDF} = window.jspdf;
+  const pdf = new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const W=210, mg=14;
+
+  function cabPDF(titulo) {
+    pdf.setFillColor(26,58,92); pdf.rect(0,0,W,22,'F');
+    pdf.setTextColor(255,255,255); pdf.setFontSize(11); pdf.setFont(undefined,'bold');
+    pdf.text('AMA UBS INTEGRADA JD. SÃO FRANCISCO II',W/2,10,{align:'center'});
+    pdf.setFontSize(9); pdf.text(titulo,W/2,17,{align:'center'});
+    pdf.setTextColor(0,0,0);
+  }
+
+  // Página 1: Cronograma
+  cabPDF('CRONOGRAMA DE REVISITAÇÃO — IDOSOS');
+  pdf.setFontSize(9); pdf.setFont(undefined,'bold');
+  let y=30;
+  pdf.text('NOME',mg,y); pdf.text('AMPI-AB',mg+80,y); pdf.text('RETORNO',mg+115,y); pdf.text('PTS',mg+145,y); pdf.text('OBS',mg+160,y);
+  pdf.setDrawColor(200,200,200); pdf.line(mg,y+2,W-mg,y+2); y+=7;
+  pdf.setFont(undefined,'normal'); pdf.setFontSize(8);
+
+  const sorted = [...idosos].sort((a,b)=>{
+    if(!a.retorno&&!b.retorno) return 0;
+    if(!a.retorno) return 1; if(!b.retorno) return -1;
+    const pa=a.retorno.split('/'), pb=b.retorno.split('/');
+    return new Date(pa[2],pa[1]-1,pa[0]) - new Date(pb[2],pb[1]-1,pb[0]);
+  });
+
+  sorted.forEach(rec=>{
+    if (y>275) { pdf.addPage(); cabPDF('CRONOGRAMA DE REVISITAÇÃO — IDOSOS (continuação)'); y=30; }
+    const ampiTxt={saudavel:'Saudável',prefragil:'Pré-frágil',fragil:'Frágil'};
+    pdf.text(rec.nome?.substring(0,35)||'—',mg,y);
+    pdf.text(ampiTxt[rec.ampi]||'—',mg+80,y);
+    pdf.text(rec.retorno||'—',mg+115,y);
+    pdf.text(rec.pts==='sim'?'Sim':'Não',mg+145,y);
+    pdf.text((rec.obs||'').substring(0,20),mg+160,y);
+    pdf.line(mg,y+2,W-mg,y+2); y+=7;
+  });
+
+  // Página 2: Dados completos
+  pdf.addPage();
+  cabPDF('DADOS COMPLETOS — IDOSOS');
+  y=30;
+  idosos.forEach(rec=>{
+    if (y>250) { pdf.addPage(); cabPDF('DADOS COMPLETOS (continuação)'); y=30; }
+    pdf.setFillColor(240,244,248); pdf.rect(mg,y-4,W-mg*2,7,'F');
+    pdf.setFont(undefined,'bold'); pdf.setFontSize(9);
+    pdf.text(`${rec.familia||'—'} | ${rec.nome||'—'}`,mg+1,y);
+    y+=8; pdf.setFont(undefined,'normal'); pdf.setFontSize(8);
+    pdf.text(`Nasc: ${rec.nascimento||'—'} | Idade: ${rec.nascimento?calcIdade(rec.nascimento)+' anos':'—'} | SUS: ${rec.sus||'—'} | Prontuário: ${rec.prontuario||'—'}`,mg+1,y);
+    y+=5;
+    pdf.text(`AMPI-AB: ${rec.ampi||'—'} | Data: ${rec.dataAmpi||'—'} | Retorno: ${rec.retorno||'—'} | PTS: ${rec.pts==='sim'?'Sim':'Não'}`,mg+1,y);
+    if (rec.obs) { y+=5; pdf.text(`Obs: ${rec.obs.substring(0,90)}`,mg+1,y); }
+    y+=8;
+  });
+
+  pdf.save(`acs_idosos_${new Date().toISOString().slice(0,10)}.pdf`);
+  mostrarToast('PDF gerado!');
+}
+
+async function gerarPDFGestantes() {
+  const lista = stor.get(KEY_GESTANTES,[]);
+  if (!lista.length) { mostrarToast('Nenhuma gestante cadastrada!'); return; }
+  mostrarToast('Gerando PDF...');
+
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const W=210,mg=14;
+
+  lista.forEach((rec,i)=>{
+    if (i>0) pdf.addPage();
+    pdf.setFillColor(233,30,140); pdf.rect(0,0,W,22,'F');
+    pdf.setTextColor(255,255,255); pdf.setFontSize(10); pdf.setFont(undefined,'bold');
+    pdf.text('PRONTUÁRIO DA GESTANTE',W/2,10,{align:'center'});
+    pdf.text('AMA UBS INTEGRADA JD. SÃO FRANCISCO II',W/2,17,{align:'center'});
+    pdf.setTextColor(0,0,0);
+
+    let y=30;
+    const linha=(l,v,y2)=>{ pdf.setFont(undefined,'bold'); pdf.text(l+':',mg,y2); pdf.setFont(undefined,'normal'); pdf.text(v||'—',mg+38,y2); };
+    linha('Família',rec.familia,y); linha('Nome',rec.nome,y+6); y+=14;
+    linha('Prev. Parto',rec.parto?new Date(rec.parto).toLocaleDateString('pt-BR'):'—',y);
+    linha('Endereço',rec.endereco,y+6); y+=14;
+
+    pdf.setFont(undefined,'bold'); pdf.text('PROCEDIMENTOS:',mg,y); y+=6; pdf.setFont(undefined,'normal');
+    pdf.text(`Strepto: ${rec.strepto?'✓':'✗'}  Odonto: ${rec.odonto?'✓':'✗'}  Vacinas: ${rec.vacinas?'✓':'✗'}  Sífilis: ${rec.sifilis?'✓':'✗'}`,mg,y); y+=8;
+
+    pdf.setFont(undefined,'bold'); pdf.text('EXAMES:',mg,y); y+=6; pdf.setFont(undefined,'normal');
+    pdf.text(`1º Tri: ${rec.exam1||'—'}  2º Tri: ${rec.exam2||'—'}  3º Tri: ${rec.exam3||'—'}`,mg,y); y+=8;
+
+    pdf.setFont(undefined,'bold'); pdf.text('VISITAS:',mg,y); y+=6; pdf.setFont(undefined,'normal');
+    const visArr=Object.entries(rec.visitas||{}).map(([k,v])=>`${k}:${new Date(v).toLocaleDateString('pt-BR')}`).join('  ');
+    const visLines=pdf.splitTextToSize(visArr||'—',W-mg*2);
+    pdf.text(visLines,mg,y); y+=visLines.length*5+4;
+
+    pdf.setFont(undefined,'bold'); pdf.text('CONSULTAS:',mg,y); y+=6; pdf.setFont(undefined,'normal');
+    const conArr=Object.entries(rec.consultas||{}).map(([k,v])=>`${k}:${new Date(v).toLocaleDateString('pt-BR')}`).join('  ');
+    const conLines=pdf.splitTextToSize(conArr||'—',W-mg*2);
+    pdf.text(conLines,mg,y); y+=conLines.length*5+4;
+
+    if (rec.obs) { pdf.setFont(undefined,'bold'); pdf.text('OBS:',mg,y); y+=6; pdf.setFont(undefined,'normal'); const l=pdf.splitTextToSize(rec.obs,W-mg*2); pdf.text(l,mg,y); }
+  });
+
+  pdf.save(`acs_gestantes_${new Date().toISOString().slice(0,10)}.pdf`);
+  mostrarToast('PDF gerado!');
+}
+
+async function gerarPDFBebes() {
+  const lista = stor.get(KEY_BEBES,[]);
+  if (!lista.length) { mostrarToast('Nenhum bebê cadastrado!'); return; }
+  mostrarToast('Gerando PDF...');
+
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const W=210,mg=14;
+
+  lista.forEach((rec,i)=>{
+    if (i>0) pdf.addPage();
+    pdf.setFillColor(41,128,185); pdf.rect(0,0,W,22,'F');
+    pdf.setTextColor(255,255,255); pdf.setFontSize(10); pdf.setFont(undefined,'bold');
+    pdf.text('PRONTUÁRIO DO BEBÊ',W/2,10,{align:'center'});
+    pdf.text('AMA UBS INTEGRADA JD. SÃO FRANCISCO II',W/2,17,{align:'center'});
+    pdf.setTextColor(0,0,0);
+
+    let y=30;
+    const meses=rec.nascimento?(()=>{const d=new Date(rec.nascimento),h=new Date();return(h.getFullYear()-d.getFullYear())*12+(h.getMonth()-d.getMonth());})():null;
+    const linha=(l,v,y2)=>{ pdf.setFont(undefined,'bold'); pdf.text(l+':',mg,y2); pdf.setFont(undefined,'normal'); pdf.text(v||'—',mg+40,y2); };
+    linha('Família',rec.familia,y); linha('Nome',rec.nome,y+6); y+=14;
+    linha('Nasc.',rec.nascimento?new Date(rec.nascimento).toLocaleDateString('pt-BR'):'—',y);
+    linha('Idade',meses!==null?meses+' meses':'—',y+6);
+    linha('Peso',rec.peso?rec.peso+'g':'—',y+12); y+=20;
+
+    pdf.setFont(undefined,'bold'); pdf.text('ALIMENTAÇÃO:',mg,y); y+=6; pdf.setFont(undefined,'normal');
+    pdf.text([
+      `Leite Materno: ${rec.leitemat?'✓':'✗'}`,`Exclusivo: ${rec.exclusivo?'✓':'✗'}`,
+      `Fórmula: ${rec.formula?'✓':'✗'}`,`Intro Alim: ${rec.introalim?'✓':'✗'}`,
+      `Doce: ${rec.doce?'✓':'✗'}`,`Salgado: ${rec.salgado?'✓':'✗'}`,`AME: ${rec.ame?'✓':'✗'}`,
+    ].join('  '),mg,y); y+=8;
+    if(rec.dataFormula){linha('Início Fórmula',new Date(rec.dataFormula).toLocaleDateString('pt-BR'),y);y+=6;}
+    if(rec.dataIntro){linha('Início Alim.',new Date(rec.dataIntro).toLocaleDateString('pt-BR'),y);y+=6;}
+
+    y+=2;
+    pdf.setFont(undefined,'bold'); pdf.text('VISITAS:',mg,y); y+=6; pdf.setFont(undefined,'normal');
+    const visArr=Object.entries(rec.visitas||{}).map(([k,v])=>`${k}:${new Date(v).toLocaleDateString('pt-BR')}`).join('  ');
+    const vl=pdf.splitTextToSize(visArr||'—',W-mg*2); pdf.text(vl,mg,y); y+=vl.length*5+4;
+
+    pdf.setFont(undefined,'bold'); pdf.text('CONSULTAS:',mg,y); y+=6; pdf.setFont(undefined,'normal');
+    const conArr=Object.entries(rec.consultas||{}).map(([k,v])=>`${k}:${new Date(v).toLocaleDateString('pt-BR')}`).join('  ');
+    const cl=pdf.splitTextToSize(conArr||'—',W-mg*2); pdf.text(cl,mg,y); y+=cl.length*5+4;
+
+    if(rec.obs){pdf.setFont(undefined,'bold');pdf.text('OBS:',mg,y);y+=6;pdf.setFont(undefined,'normal');pdf.text(pdf.splitTextToSize(rec.obs,W-mg*2),mg,y);}
+  });
+
+  pdf.save(`acs_bebes_${new Date().toISOString().slice(0,10)}.pdf`);
+  mostrarToast('PDF gerado!');
+}
+
+/* ================================================
+   TOAST
+================================================ */
+function mostrarToast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('visivel');
+  clearTimeout(t._timer);
+  t._timer=setTimeout(()=>t.classList.remove('visivel'),2500);
+}
+
+/* ================================================
+   INICIALIZAÇÃO
+================================================ */
+document.addEventListener('DOMContentLoaded',()=>{
+  carregarConfig();
+  renderizarGrid();
+  carregarDados();
+  atualizarContadores();
+
+  // Gerar grids de datas dos modais ao abrir
+  // (feito dinamicamente em abrirModalGestante/Bebe)
+});
+</script>
+</body>
+</html>
