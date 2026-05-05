@@ -237,6 +237,14 @@ body {
 .celula.tem-idoso   { border-top: 3px solid var(--roxo); }
 .celula.tem-gestante{ border-top: 3px solid var(--rosa); }
 .celula.tem-bebe    { border-top: 3px solid var(--azul-claro); }
+.celula.tem-diabetico   { border-bottom: 3px solid var(--laranja); }
+.celula.tem-hipertenso  { border-bottom: 3px solid #222; }
+
+.badge-diab { display:inline-block; width:9px; height:9px; border-radius:50%; background:var(--laranja); border:1px solid rgba(0,0,0,0.15); }
+.badge-hiper{ display:inline-block; width:9px; height:9px; border-radius:50%; background:#222;            border:1px solid rgba(0,0,0,0.15); }
+
+.dash-card.laranja .dash-card-numero { color: var(--laranja); }
+.dash-card.preto   .dash-card-numero { color: #222; }
 
 /* ================================================
    MODAIS GENÉRICOS
@@ -599,6 +607,7 @@ body {
     <button class="aba-btn" onclick="mudarAba('idoso')">👴 Idoso</button>
     <button class="aba-btn" onclick="mudarAba('gestante')">🤰 Gestante</button>
     <button class="aba-btn" onclick="mudarAba('bebe')">👶 Bebê</button>
+    <button class="aba-btn" onclick="mudarAba('cronico')">🩺 Crônicos</button>
     <button class="aba-btn" onclick="mudarAba('relatorios')">📊 Relatórios</button>
   </nav>
 
@@ -653,11 +662,11 @@ body {
       <div class="legenda-item"><span style="font-size:9px">⚠ Obs</span></div>
     </div>
     <div class="contadores">
-      <div class="contador-item" id="cnt-total">Total: 263</div>
+      <div class="contador-item" id="cnt-total">Total: 320</div>
       <div class="contador-item" id="cnt-visitados" style="color:#2ecc71">✓ 0</div>
       <div class="contador-item" id="cnt-ausentes" style="color:#ff6b6b">✗ 0</div>
       <div class="contador-item" id="cnt-x" style="color:#f1c40f">X 0</div>
-      <div class="contador-item" id="cnt-vazios">Vazios: 263</div>
+      <div class="contador-item" id="cnt-vazios">Vazios: 320</div>
     </div>
   </div>
 
@@ -705,6 +714,31 @@ body {
       <button class="btn btn-azul" onclick="abrirModalBebe(null)">+ Novo</button>
     </div>
     <div class="pront-lista" id="lista-bebes"></div>
+  </div>
+</div>
+
+<!-- ================================================
+     ABA: CRÔNICOS (DIABÉTICOS / HIPERTENSOS)
+================================================ -->
+<div id="aba-cronico" class="aba-conteudo">
+  <div class="pront-conteudo">
+    <div class="pront-header">
+      <h2>🩺 Diabéticos &amp; Hipertensos</h2>
+      <input type="text" class="pront-busca" id="busca-cronico" placeholder="🔍 Buscar..." oninput="renderListaCronicos()">
+      <button class="btn" style="background:var(--laranja);color:white" onclick="abrirModalCronico(null)">+ Novo</button>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700">
+        <span class="badge-diab"></span> Diabético
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700">
+        <span class="badge-hiper"></span> Hipertenso
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700">
+        <span class="badge-diab"></span><span class="badge-hiper"></span> Ambos
+      </div>
+    </div>
+    <div class="pront-lista" id="lista-cronicos"></div>
   </div>
 </div>
 
@@ -970,7 +1004,7 @@ body {
       <label class="bool-item"><input type="checkbox" id="bebe-intro-alim"> Intro Alimentar</label>
       <label class="bool-item"><input type="checkbox" id="bebe-doce"> Doce</label>
       <label class="bool-item"><input type="checkbox" id="bebe-salgado"> Salgado</label>
-      <label class="bool-item"><input type="checkbox" id="bebe-ame"> Participa AME</label>
+      <label class="bool-item"><input type="checkbox" id="bebe-ame"> Participa GAME</label>
     </div>
     <div class="grid-2">
       <div>
@@ -990,6 +1024,45 @@ body {
       <button class="btn-perigo" id="btn-excluir-bebe" onclick="excluirBebe()">Excluir</button>
       <button class="btn-secundario" onclick="fecharModal('overlay-bebe')">Cancelar</button>
       <button class="btn-salvar" style="background:var(--azul-claro)" onclick="salvarBebe()">✓ Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================
+     MODAL: CRÔNICO
+================================================ -->
+<div id="overlay-cronico" class="overlay-modal" onclick="fecharModalFora(event,'overlay-cronico')">
+  <div class="modal-box" style="position:relative">
+    <button class="btn-fechar" onclick="fecharModal('overlay-cronico')">✕</button>
+    <div class="modal-titulo-box">🩺 Diabético / Hipertenso</div>
+
+    <input type="hidden" id="cronico-id">
+
+    <div class="grid-2">
+      <div>
+        <label class="modal-label">Código Família</label>
+        <input type="text" class="modal-input upper" id="cronico-familia" placeholder="Ex: F013" maxlength="10">
+      </div>
+      <div>
+        <label class="modal-label">Condição</label>
+        <select class="modal-select" id="cronico-tipo">
+          <option value="diabetico">🟠 Diabético</option>
+          <option value="hipertenso">⚫ Hipertenso</option>
+          <option value="ambos">🟠⚫ Ambos</option>
+        </select>
+      </div>
+    </div>
+
+    <label class="modal-label">Nome completo</label>
+    <input type="text" class="modal-input upper" id="cronico-nome" placeholder="Nome do paciente" maxlength="60">
+
+    <label class="modal-label">Observações</label>
+    <textarea class="modal-textarea" id="cronico-obs" placeholder="Observações clínicas..." maxlength="500"></textarea>
+
+    <div class="modal-acoes">
+      <button class="btn-perigo" id="btn-excluir-cronico" onclick="excluirCronico()">Excluir</button>
+      <button class="btn-secundario" onclick="fecharModal('overlay-cronico')">Cancelar</button>
+      <button class="btn-salvar" style="background:var(--laranja)" onclick="salvarCronico()">✓ Salvar</button>
     </div>
   </div>
 </div>
@@ -1036,8 +1109,9 @@ const KEY_OBS      = 'acs_obs';       // observações por célula
 const KEY_IDOSOS   = 'acs_idosos';
 const KEY_GESTANTES= 'acs_gestantes';
 const KEY_BEBES    = 'acs_bebes';
+const KEY_CRONICOS = 'acs_cronicos';
 
-const TOTAL_CELULAS = 263;
+const TOTAL_CELULAS = 320;
 
 /* ================================================
    HELPERS DE STORAGE
@@ -1054,7 +1128,7 @@ const stor = {
 function mudarAba(id) {
   document.querySelectorAll('.aba-btn').forEach((b,i) => b.classList.remove('ativa'));
   document.querySelectorAll('.aba-conteudo').forEach(c => c.classList.remove('ativa'));
-  const abas = ['mapa','idoso','gestante','bebe','relatorios'];
+  const abas = ['mapa','idoso','gestante','bebe','cronico','relatorios'];
   const idx  = abas.indexOf(id);
   document.querySelectorAll('.aba-btn')[idx].classList.add('ativa');
   document.getElementById('aba-' + id).classList.add('ativa');
@@ -1062,6 +1136,7 @@ function mudarAba(id) {
   if (id === 'idoso')     renderListaIdosos();
   if (id === 'gestante')  renderListaGestantes();
   if (id === 'bebe')      renderListaBebes();
+  if (id === 'cronico')   renderListaCronicos();
   if (id === 'relatorios') renderRelatorios();
 }
 
@@ -1139,14 +1214,20 @@ function atualizarBadgesCelula(codigo) {
   const cel = document.getElementById('cel-' + codigo);
   if (!cel) return;
   const badges = cel.querySelector('.celula-badges');
-  cel.classList.remove('tem-idoso','tem-gestante','tem-bebe');
+  cel.classList.remove('tem-idoso','tem-gestante','tem-bebe','tem-diabetico','tem-hipertenso');
   let b = '';
   const idosos    = stor.get(KEY_IDOSOS,   []);
   const gestantes = stor.get(KEY_GESTANTES,[]);
   const bebes     = stor.get(KEY_BEBES,    []);
+  const cronicos  = stor.get(KEY_CRONICOS, []);
   if (idosos.find(x=>x.familia===codigo))    { b += '<span class="badge-icon">👴</span>'; cel.classList.add('tem-idoso'); }
   if (gestantes.find(x=>x.familia===codigo)) { b += '<span class="badge-icon">🤰</span>'; cel.classList.add('tem-gestante'); }
   if (bebes.find(x=>x.familia===codigo))     { b += '<span class="badge-icon">👶</span>'; cel.classList.add('tem-bebe'); }
+  const crec = cronicos.filter(x=>x.familia===codigo);
+  const temDiab  = crec.some(x=>x.tipo==='diabetico'||x.tipo==='ambos');
+  const temHiper = crec.some(x=>x.tipo==='hipertenso'||x.tipo==='ambos');
+  if (temDiab)  { b += '<span class="badge-diab" title="Diabético"></span>'; cel.classList.add('tem-diabetico'); }
+  if (temHiper) { b += '<span class="badge-hiper" title="Hipertenso"></span>'; cel.classList.add('tem-hipertenso'); }
   badges.innerHTML = b;
 }
 
@@ -1202,14 +1283,20 @@ function abrirModalMapa(codigo) {
   const idosos    = stor.get(KEY_IDOSOS,[]);
   const gestantes = stor.get(KEY_GESTANTES,[]);
   const bebes     = stor.get(KEY_BEBES,[]);
+  const cronicos  = stor.get(KEY_CRONICOS,[]);
   const pi = idosos.find(x=>x.familia===codigo);
   const pg = gestantes.find(x=>x.familia===codigo);
   const pb = bebes.find(x=>x.familia===codigo);
-  if (pi||pg||pb) {
+  const pcs = cronicos.filter(x=>x.familia===codigo);
+  if (pi||pg||pb||pcs.length) {
     links = '<div style="border-top:1px solid #eee;padding-top:10px;font-size:11px;font-weight:700;color:#888;text-transform:uppercase;margin-bottom:6px">Prontuários vinculados</div>';
-    if (pi) links += `<button class="btn btn-roxo" style="width:100%;margin-bottom:4px;justify-content:center" onclick="fecharModalMapa();mudarAba('idoso');setTimeout(()=>abrirModalIdoso('${pi.id}'),100)">👴 ${pi.nome}</button>`;
-    if (pg) links += `<button class="btn" style="width:100%;margin-bottom:4px;justify-content:center;background:var(--rosa);color:white" onclick="fecharModalMapa();mudarAba('gestante');setTimeout(()=>abrirModalGestante('${pg.id}'),100)">🤰 ${pg.nome}</button>`;
-    if (pb) links += `<button class="btn btn-azul" style="width:100%;margin-bottom:4px;justify-content:center" onclick="fecharModalMapa();mudarAba('bebe');setTimeout(()=>abrirModalBebe('${pb.id}'),100)">👶 ${pb.nome}</button>`;
+    if (pi)  links += `<button class="btn btn-roxo" style="width:100%;margin-bottom:4px;justify-content:center" onclick="fecharModalMapa();mudarAba('idoso');setTimeout(()=>abrirModalIdoso('${pi.id}'),100)">👴 ${pi.nome}</button>`;
+    if (pg)  links += `<button class="btn" style="width:100%;margin-bottom:4px;justify-content:center;background:var(--rosa);color:white" onclick="fecharModalMapa();mudarAba('gestante');setTimeout(()=>abrirModalGestante('${pg.id}'),100)">🤰 ${pg.nome}</button>`;
+    if (pb)  links += `<button class="btn btn-azul" style="width:100%;margin-bottom:4px;justify-content:center" onclick="fecharModalMapa();mudarAba('bebe');setTimeout(()=>abrirModalBebe('${pb.id}'),100)">👶 ${pb.nome}</button>`;
+    pcs.forEach(pc => {
+      const ico = pc.tipo==='diabetico'?'🟠':pc.tipo==='hipertenso'?'⚫':'🟠⚫';
+      links += `<button class="btn" style="width:100%;margin-bottom:4px;justify-content:center;background:var(--laranja);color:white" onclick="fecharModalMapa();mudarAba('cronico');setTimeout(()=>abrirModalCronico('${pc.id}'),100)">${ico} ${pc.nome}</button>`;
+    });
   }
   linksDiv.innerHTML = links;
 
@@ -1319,6 +1406,7 @@ function exportarBackup() {
     idosos:     stor.get(KEY_IDOSOS,[]),
     gestantes:  stor.get(KEY_GESTANTES,[]),
     bebes:      stor.get(KEY_BEBES,[]),
+    cronicos:   stor.get(KEY_CRONICOS,[]),
     exportadoEm: new Date().toISOString(),
   };
   const mes = config.mes||'mes';
@@ -1345,6 +1433,7 @@ function processarImportacao(event) {
       if (bk.idosos?.length)    pronts.push(`${bk.idosos.length} idoso(s)`);
       if (bk.gestantes?.length) pronts.push(`${bk.gestantes.length} gestante(s)`);
       if (bk.bebes?.length)     pronts.push(`${bk.bebes.length} bebê(s)`);
+      if (bk.cronicos?.length)  pronts.push(`${bk.cronicos.length} crônico(s)`);
       const prontsInfo = pronts.length ? `\nProntuários: ${pronts.join(', ')}` : '';
 
       if (!confirm(`Importar backup completo${info}?${prontsInfo}\n\nSubstitui TODOS os dados atuais.`)) return;
@@ -1358,6 +1447,7 @@ function processarImportacao(event) {
       if (bk.idosos)    stor.set(KEY_IDOSOS, bk.idosos);       else stor.rm(KEY_IDOSOS);
       if (bk.gestantes) stor.set(KEY_GESTANTES, bk.gestantes); else stor.rm(KEY_GESTANTES);
       if (bk.bebes)     stor.set(KEY_BEBES, bk.bebes);         else stor.rm(KEY_BEBES);
+      if (bk.cronicos)  stor.set(KEY_CRONICOS, bk.cronicos);   else stor.rm(KEY_CRONICOS);
 
       // Reatualiza grid do mapa
       for (let i=1; i<=TOTAL_CELULAS; i++) {
@@ -1381,6 +1471,7 @@ function exportarTudoBackup() {
     idosos:    stor.get(KEY_IDOSOS,[]),
     gestantes: stor.get(KEY_GESTANTES,[]),
     bebes:     stor.get(KEY_BEBES,[]),
+    cronicos:  stor.get(KEY_CRONICOS,[]),
     exportadoEm: new Date().toISOString(),
   };
   baixarJSON(backup, `acs_backup_geral_${new Date().toISOString().slice(0,10)}.json`);
@@ -1907,6 +1998,83 @@ function renderListaBebes() {
 }
 
 /* ================================================
+   CRÔNICOS (DIABÉTICOS / HIPERTENSOS) — CRUD
+================================================ */
+let cronicoAtual = null;
+
+function abrirModalCronico(id) {
+  cronicoAtual = id;
+  const lista = stor.get(KEY_CRONICOS,[]);
+  const rec   = id ? lista.find(x=>x.id===id) : null;
+
+  document.getElementById('cronico-id').value     = rec?.id||'';
+  document.getElementById('cronico-familia').value = rec?.familia||'';
+  document.getElementById('cronico-nome').value   = rec?.nome||'';
+  document.getElementById('cronico-tipo').value   = rec?.tipo||'diabetico';
+  document.getElementById('cronico-obs').value    = rec?.obs||'';
+
+  document.getElementById('btn-excluir-cronico').style.display = rec?'block':'none';
+  document.getElementById('overlay-cronico').classList.add('ativo');
+}
+
+function salvarCronico() {
+  const nome = document.getElementById('cronico-nome').value.trim();
+  if (!nome) { mostrarToast('Informe o nome!'); return; }
+  const lista = stor.get(KEY_CRONICOS,[]);
+  const rec = {
+    id:      document.getElementById('cronico-id').value||gerarId(),
+    familia: document.getElementById('cronico-familia').value.toUpperCase().trim(),
+    nome:    nome.toUpperCase(),
+    tipo:    document.getElementById('cronico-tipo').value,
+    obs:     document.getElementById('cronico-obs').value.trim(),
+  };
+  const idx = lista.findIndex(x=>x.id===rec.id);
+  if (idx>=0) lista[idx]=rec; else lista.push(rec);
+  stor.set(KEY_CRONICOS,lista);
+  fecharModal('overlay-cronico');
+  renderListaCronicos();
+  atualizarBadgesCelula(rec.familia);
+  mostrarToast('Salvo!');
+}
+
+function excluirCronico() {
+  if (!confirm('Excluir este registro?')) return;
+  let lista = stor.get(KEY_CRONICOS,[]);
+  const rec = lista.find(x=>x.id===cronicoAtual);
+  lista = lista.filter(x=>x.id!==cronicoAtual);
+  stor.set(KEY_CRONICOS,lista);
+  fecharModal('overlay-cronico');
+  renderListaCronicos();
+  if (rec?.familia) atualizarBadgesCelula(rec.familia);
+  mostrarToast('Excluído!');
+}
+
+function renderListaCronicos() {
+  const busca  = document.getElementById('busca-cronico').value.toLowerCase();
+  const lista  = stor.get(KEY_CRONICOS,[]);
+  const cont   = document.getElementById('lista-cronicos');
+  const filtro = lista.filter(x=>
+    x.nome?.toLowerCase().includes(busca) ||
+    x.familia?.toLowerCase().includes(busca)
+  );
+  if (!filtro.length) { cont.innerHTML='<div class="vazio-msg"><div>🩺</div>Nenhum registro cadastrado</div>'; return; }
+
+  const tipoLabel = {diabetico:'Diabético', hipertenso:'Hipertenso', ambos:'Diabético + Hipertenso'};
+  const tipoIco   = {diabetico:'🟠', hipertenso:'⚫', ambos:'🟠⚫'};
+  const tipoCor   = {diabetico:'border-left-color:var(--laranja)', hipertenso:'border-left-color:#222', ambos:'border-left-color:var(--laranja)'};
+
+  cont.innerHTML = filtro.map(rec => `
+    <div class="pront-card" style="${tipoCor[rec.tipo]||''}" onclick="abrirModalCronico('${rec.id}')">
+      <div class="pront-card-icon">${tipoIco[rec.tipo]||'🩺'}</div>
+      <div class="pront-card-info">
+        <div class="pront-card-nome">${rec.nome}</div>
+        <div class="pront-card-sub">${rec.familia||''}</div>
+      </div>
+      <span class="pront-card-badge badge-normal">${tipoLabel[rec.tipo]||'—'}</span>
+    </div>`).join('');
+}
+
+/* ================================================
    RELATÓRIOS / DASHBOARD
 ================================================ */
 function alertaRetorno(retornoStr) {
@@ -1927,6 +2095,9 @@ function renderRelatorios() {
   const idosos    = stor.get(KEY_IDOSOS,[]);
   const gestantes = stor.get(KEY_GESTANTES,[]);
   const bebes     = stor.get(KEY_BEBES,[]);
+  const cronicos  = stor.get(KEY_CRONICOS,[]);
+  const diabeticos   = cronicos.filter(x=>x.tipo==='diabetico'||x.tipo==='ambos');
+  const hipertensos  = cronicos.filter(x=>x.tipo==='hipertenso'||x.tipo==='ambos');
 
   let v=0,a=0,x=0;
   for (const val of Object.values(dados)) {
@@ -1941,6 +2112,9 @@ function renderRelatorios() {
     <div class="dash-card roxo"><div class="dash-card-numero">${idosos.length}</div><div class="dash-card-label">Idosos</div></div>
     <div class="dash-card rosa"><div class="dash-card-numero">${gestantes.length}</div><div class="dash-card-label">Gestantes</div></div>
     <div class="dash-card azul"><div class="dash-card-numero">${bebes.length}</div><div class="dash-card-label">Bebês</div></div>
+    <div class="dash-card laranja"><div class="dash-card-numero">${diabeticos.length}</div><div class="dash-card-label">Diabéticos</div></div>
+    <div class="dash-card preto"><div class="dash-card-numero">${hipertensos.length}</div><div class="dash-card-label">Hipertensos</div></div>
+    <div class="dash-card laranja"><div class="dash-card-numero">${cronicos.length}</div><div class="dash-card-label">Total Crônicos</div></div>
   `;
 
   // Agenda de retornos
@@ -2154,7 +2328,7 @@ function mostrarToast(msg) {
       obtido no Google Cloud Console:
       https://console.cloud.google.com/apis/credentials
 ================================================ */
-const GOOGLE_CLIENT_ID = '266896978593-vr9ocu5ljctsejp5p6dnd60fl6ct1018.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = 'SEU_CLIENT_ID_AQUI.apps.googleusercontent.com';
 const DRIVE_SCOPE      = 'https://www.googleapis.com/auth/drive.file';
 const DRIVE_FILE_NAME  = 'dados_controle_acs.json';
 
@@ -2252,6 +2426,7 @@ async function salvarNoDrive() {
     idosos:      stor.get(KEY_IDOSOS, []),
     gestantes:   stor.get(KEY_GESTANTES, []),
     bebes:       stor.get(KEY_BEBES, []),
+    cronicos:    stor.get(KEY_CRONICOS, []),
     salvoEm:     new Date().toISOString(),
   }, null, 2);
 
@@ -2339,6 +2514,7 @@ async function carregarDoDrive() {
   if (bk.idosos)    stor.set(KEY_IDOSOS,    bk.idosos);    else stor.rm(KEY_IDOSOS);
   if (bk.gestantes) stor.set(KEY_GESTANTES, bk.gestantes); else stor.rm(KEY_GESTANTES);
   if (bk.bebes)     stor.set(KEY_BEBES,     bk.bebes);     else stor.rm(KEY_BEBES);
+  if (bk.cronicos)  stor.set(KEY_CRONICOS,  bk.cronicos);  else stor.rm(KEY_CRONICOS);
 
   // 4. Renderiza o grid com os dados carregados
   for (let i = 1; i <= TOTAL_CELULAS; i++) {
