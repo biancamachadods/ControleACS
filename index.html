@@ -1746,10 +1746,10 @@ function renderListaIdosos() {
   const busca  = document.getElementById('busca-idoso').value.toLowerCase();
   const idosos = stor.get(KEY_IDOSOS,[]);
   const lista  = document.getElementById('lista-idosos');
-  const filtro = idosos.filter(x=>
+ const filtro = idosos.filter(x=>
     x.nome?.toLowerCase().includes(busca) ||
     x.familia?.toLowerCase().includes(busca)
-  );
+  ).sort((a,b) => (a.familia||'').localeCompare(b.familia||''));
   if (!filtro.length) { lista.innerHTML='<div class="vazio-msg"><div>👴</div>Nenhum idoso cadastrado</div>'; return; }
   lista.innerHTML = filtro.map(rec => {
     const ampiMap = {saudavel:'badge-saudavel',prefragil:'badge-prefragil',fragil:'badge-fragil'};
