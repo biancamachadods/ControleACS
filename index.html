@@ -2056,7 +2056,7 @@ function renderListaCronicos() {
   const filtro = lista.filter(x=>
     x.nome?.toLowerCase().includes(busca) ||
     x.familia?.toLowerCase().includes(busca)
-  );
+).sort((a,b) => (a.familia||'').localeCompare(b.familia||''));
   if (!filtro.length) { cont.innerHTML='<div class="vazio-msg"><div>🩺</div>Nenhum registro cadastrado</div>'; return; }
 
   const tipoLabel = {diabetico:'Diabético', hipertenso:'Hipertenso', ambos:'Diabético + Hipertenso'};
